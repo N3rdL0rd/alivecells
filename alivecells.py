@@ -5,11 +5,8 @@ import zipfile
 import argparse
 import shutil
 from tqdm import tqdm
-import win32api
-import win32con
-import win32file
-import win32gui
-import traceback
+import win32api # type: ignore
+import win32con # type: ignore
 
 # region Constants
 OUTPUT = "hlboot.dat" # Default output filename
