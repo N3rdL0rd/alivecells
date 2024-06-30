@@ -43,7 +43,7 @@ def extract_bytecode(exe_path):
 # endregion
 
 # region Main functions
-def add_vm(dir, game_path, output="hlboot.dat", extract=True, goldberg=True):
+def add_vm(dir, game_path, output="hlboot.dat", extract=True, goldberg=False):
     shutil.rmtree(dir, ignore_errors=True)
     os.makedirs(dir, exist_ok=True)
     print("Downloading Hashlink VM...")
@@ -55,8 +55,8 @@ def add_vm(dir, game_path, output="hlboot.dat", extract=True, goldberg=True):
         os.rename(os.path.join(dir, "hl-1.10.0-win", f), os.path.join(dir, f))
     os.rmdir(os.path.join(dir, "hl-1.10.0-win"))
     print("Hashlink VM downloaded and extracted to \"{}\".".format(dir))
-    print("Extracting bytecode from executable...")
     if extract:
+        print("Extracting bytecode from executable...")
         hlb_data = extract_bytecode(os.path.join(game_path, "deadcells.exe"))
         with open(os.path.join(dir, output), "wb") as f:
             f.write(hlb_data)
@@ -88,6 +88,8 @@ def add_vm(dir, game_path, output="hlboot.dat", extract=True, goldberg=True):
         print("Copying Goldberg DLL...")
         shutil.move(os.path.join(dir, GOLDBERG_DLL), os.path.join(dir, GOLDBERG_DLL + ".bak"))
         shutil.copy2(os.path.join(dir, "Goldberg", GOLDBERG_DLL), os.path.join(dir, GOLDBERG_DLL))
+    with open(os.path.join(dir, "steam_appid.txt"), "w") as f:
+        f.write("588650")
     print("Cleaning up...")
     cleanup = [".lib"]
     cleanup_specific = ["your game content lives here.txt", "ThirdPartyLicenses.txt"]
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     add_vm_parser.add_argument("game_path", help="The path to the Dead Cells game directory.")
     add_vm_parser.add_argument("--output", default="hlboot.dat", help="The output filename for the Hashlink bytecode.")
     add_vm_parser.add_argument("--no-extract", action="store_true", help="Do not extract Hashlink bytecode from the executable - will require you to provide your own hlboot.dat.")
-    add_vm_parser.add_argument("--no-goldberg", action="store_true", help="Do not use Goldberg Emulator to bypass Steam API issues - don't use this unless you're developing.")
+    add_vm_parser.add_argument("--goldberg", action="store_true", help="Use Goldberg Emulator to bypass Steam API issues - generally not required.")
     
     extract_parser = subparsers.add_parser("extract", help="Extract Hashlink bytecode from the Dead Cells executable.")
     extract_parser.add_argument("exe_path", help="The path to the Dead Cells executable (deadcells.exe, not deadcells_gl.exe).")
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.command == "install":
-        add_vm(args.dir, args.game_path, output=args.output, extract=args.no_extract, goldberg=not args.no_goldberg)
+        add_vm(args.dir, args.game_path, output=args.output, extract=not args.no_extract, goldberg=args.goldberg)
     elif args.command == "extract":
         hlb_data = extract_bytecode(args.exe_path)
         with open(args.output, "wb") as f:

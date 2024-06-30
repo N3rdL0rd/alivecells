@@ -68,9 +68,12 @@ This is pretty much uncharted territory when it comes to modding - so here's my 
 3. **Disassemble and decompile the bytecode** - you can use [hlbc](https://github.com/Gui-Yom/hlbc), but be warned - not everything can be decompiled (and, in turn, recompiled) correctly, and you'll probably still end up poking and prodding the bytecode with a hex editor (I recommend [ImHex](https://imhex.werwolv.net/) or [REHex](https://rehex.solemnwarning.net/))
 4. **Put everything back and hope it works** - you'll need to reassemble the bytecode and put it back in the game directory, then see if it works
 
+## Linux Support
+
+Dead Cells on Linux already has `hlboot.dat` outside of the executable, so you can just use that file directly with your choice of Hashlink VM.
+
 ## Roadmap
 
-- [ ] Linux support (it might just work already, but it hasn't been tested)
 - [ ] Implement a more user-friendly interface
 - [ ] Fix Steam API issues and remove Goldberg workaround
 - [ ] Create a proper bytecode patcher/modloader
