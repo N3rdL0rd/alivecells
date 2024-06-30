@@ -5,6 +5,11 @@ import zipfile
 import argparse
 import shutil
 from tqdm import tqdm
+import win32api
+import win32con
+import win32file
+import win32gui
+import traceback
 
 # region Constants
 OUTPUT = "hlboot.dat" # Default output filename
@@ -40,6 +45,16 @@ def extract_bytecode(exe_path):
         hlb_end = len(hlb_data)
     hlb_data = hlb_data[:hlb_end]
     return hlb_data
+
+def change_ico(exe, ico):
+    try:
+        hExe = win32api.BeginUpdateResource(exe, False)
+        with open(ico, 'rb') as icon_file:
+            icon_data = icon_file.read()
+        win32api.UpdateResource(hExe, win32con.RT_GROUP_ICON, 1, icon_data)
+        win32api.EndUpdateResource(hExe, False)
+    except Exception as e:
+        print(f"Error: {e}")
 # endregion
 
 # region Main functions
@@ -104,6 +119,10 @@ def add_vm(dir, game_path, output="hlboot.dat", extract=True, goldberg=False):
             pass
     if goldberg:
         shutil.rmtree(os.path.join(dir, "Goldberg"), ignore_errors=True)
+    print("Changing icon...")
+    ico = os.path.join(os.path.dirname(__file__), "assets", "icon-16.ico")
+    print("Using icon from \"{}\".".format(ico))
+    change_ico(os.path.join(dir, "hl.exe"), ico)
     print("Dead Cells is now ready to be run unpacked under the Hashlink VM. Have fun!")
     
 def repair(dir, game_path, output="hlboot.dat", restore_respak=False):
