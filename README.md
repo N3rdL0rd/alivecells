@@ -9,7 +9,7 @@ Tools to automatically extract Hashlink bytecode from Dead Cells and configure t
 
 ### Prerequisites
 
-- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) for Windows (Any version should work, but this was tested with the Steam version)
+- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
 - [Python 3.10+](https://www.python.org/downloads/) or [pyenv](https://pyenv-win.github.io/pyenv-win/) and pip (This repository is configured to automatically use 3.10.11 if you have pyenv installed)
 - An Internet connection (I hope you have one of these already...)
 
@@ -63,6 +63,7 @@ options:
 
 - When running in a seperate directory than the original Steam installation, the game will fail to sync Steam Cloud saves. This can be fixed by symlinking the `save` directory in the game directory to the original Steam installation directory, but this is only a temporary fix - a proper solution is being worked on.
 - The game will be able to connect to the Steam Workshop, but will generally not be able to download mods due to the game not being run through Steam. This can be fixed by installing the VM to the actual game directory and running `hl.exe` from Steam instead of `deadcells.exe`
+- Sometimes, the game will register itself as Half-Life in Steam and Discord.
 
 ## For Modders
 
