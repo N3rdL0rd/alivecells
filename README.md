@@ -36,7 +36,7 @@ positional arguments:
 options:
   -h, --help         show this help message and exit
 
-usage: alivecells.py install [-h] [--output OUTPUT] [--no-extract] [--no-goldberg] dir game_path
+usage: alivecells.py install [-h] [--output OUTPUT] [--no-extract] [--goldberg] dir game_path
 
 positional arguments:
   dir              The directory to install the Hashlink VM in.
@@ -46,7 +46,7 @@ options:
   -h, --help       show this help message and exit
   --output OUTPUT  The output filename for the Hashlink bytecode.
   --no-extract     Do not extract Hashlink bytecode from the executable - will require you to provide your own hlboot.dat.
-  --no-goldberg    Do not use Goldberg Emulator to bypass Steam API issues - don't use this unless you're developing.
+  --goldberg       Use Goldberg Emulator to bypass Steam API issues - generally not required.
 
 usage: alivecells.py extract [-h] [--output OUTPUT] [--in-game-dir] exe_path
 
@@ -58,6 +58,11 @@ options:
   --output OUTPUT  The output filename for the Hashlink bytecode.
   --in-game-dir    Save the Hashlink bytecode in the Dead Cells game directory as well as the current directory.
 ```
+
+## Known Issues
+
+- When running in a seperate directory than the original Steam installation, the game will fail to sync Steam Cloud saves. This can be fixed by symlinking the `save` directory in the game directory to the original Steam installation directory, but this is only a temporary fix - a proper solution is being worked on.
+- The game will be able to connect to the Steam Workshop, but will generally not be able to download mods due to the game not being run through Steam. This can be fixed by installing the VM to the actual game directory and running `hl.exe` from Steam instead of `deadcells.exe`
 
 ## For Modders
 
@@ -75,7 +80,6 @@ Dead Cells on Linux already has `hlboot.dat` outside of the executable, so you c
 ## Roadmap
 
 - [ ] Implement a more user-friendly interface
-- [ ] Fix Steam API issues and remove Goldberg workaround
 - [ ] Create a proper bytecode patcher/modloader
 
 ## License
