@@ -7,6 +7,8 @@ import shutil
 from tqdm import tqdm
 import win32api # type: ignore
 import win32con # type: ignore
+from pathlib import Path
+import vdf
 
 # region Constants
 OUTPUT = "hlboot.dat" # Default output filename
@@ -52,6 +54,42 @@ def change_ico(exe, ico):
         win32api.EndUpdateResource(hExe, False)
     except Exception as e:
         print(f"Error: {e}")
+
+def add_steam_shortcut(app_name, exe_path, steam_path="C:/Program Files (x86)/Steam", launch_options="", icon_path="", logo_path="", hero_path="", grid_path="", p_path=""):
+    steam_path = Path(steam_path)
+    userdata_path = steam_path / "userdata"
+    user_id = next(os.walk(userdata_path))[1][0]
+    shortcuts_path = userdata_path / user_id / "config" / "shortcuts.vdf"
+    with open(shortcuts_path, 'rb') as f:
+        shortcuts = vdf.binary_load(f)
+    new_app_id = str(max(int(k) for k in shortcuts['shortcuts'].keys()) + 1)
+    shortcuts['shortcuts'][new_app_id] = {
+        "appname": app_name,
+        "exe": f'"{exe_path}"',
+        "StartDir": str(Path(exe_path).parent),
+        "icon": icon_path,
+        "ShortcutPath": "",
+        "LaunchOptions": launch_options,
+        "IsHidden": 0,
+        "AllowDesktopConfig": 1,
+        "AllowOverlay": 1,
+        "OpenVR": 0,
+        "Devkit": 0,
+        "DevkitGameID": "",
+        "LastPlayTime": 0
+    }
+    with open(shortcuts_path, 'wb') as f:
+        vdf.binary_dump(shortcuts, f)
+    artwork_path = userdata_path / user_id / "config" / "grid"
+    app_id = str(int(new_app_id) | 0x80000000)  # Convert to uint32
+    if logo_path:
+        shutil.copy(logo_path, artwork_path / f"{app_id}_logo.png")
+    if hero_path:
+        shutil.copy(hero_path, artwork_path / f"{app_id}_hero.png")
+    if grid_path:
+        shutil.copy(grid_path, artwork_path / f"{app_id}.png")
+    if p_path:
+        shutil.copy(p_path, artwork_path / f"{app_id}p.png")
 # endregion
 
 # region Main functions
@@ -158,6 +196,9 @@ if __name__ == "__main__":
     repair_parser.add_argument("--output", default="hlboot.dat", help="The output filename for the Hashlink bytecode.")
     repair_parser.add_argument("-r", "--restore-respak", action="store_true", help="Restore the res.pak file from the game directory.")
 
+    steam_parser = subparsers.add_parser("steam", help="Add a shortcut to your Steam Library for the Hashlink VM installation.")
+    steam_parser.add_argument("dir", help="The directory containing the Hashlink VM installation.")
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -173,6 +214,14 @@ if __name__ == "__main__":
             print("Hashlink bytecode also saved to \"{}\".".format(os.path.join(os.path.dirname(args.exe_path), args.output)))
     elif args.command == "repair":
         repair(args.dir, args.game_path, output=args.output, restore_respak=args.restore_respak)
+    elif args.command == "steam":
+        add_steam_shortcut("Alive Cells", os.path.abspath(os.path.join(args.dir, "hl.exe")), \
+                           icon_path=os.path.join(os.path.dirname(__file__), "assets", "bluecells.png"), \
+                           launch_options="hlboot.dat", \
+                           logo_path=os.path.join(os.path.dirname(__file__), "assets", "alivecells.png"), \
+                           hero_path=os.path.join(os.path.dirname(__file__), "assets", "hero.png"), \
+                           grid_path=os.path.join(os.path.dirname(__file__), "assets", "grid.png"), \
+                           p_path=os.path.join(os.path.dirname(__file__), "assets", "grid2.png"))
     else:
         raise ValueError("Invalid command.")
 # endregion
