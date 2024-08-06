@@ -7,6 +7,9 @@ Tools to automatically extract Hashlink bytecode from Dead Cells and configure t
 > [!NOTE]
 > This project is still in development and is not yet quite ready for public use. It is provided here purely to allow for others to play with the game in ways previously not possible.
 
+> [!WARNING]
+> This is a Windows-only script. On Linux and MacOS, the game is already configured in such a way as to easily facilitate modding.
+
 ### Prerequisites
 
 - [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
