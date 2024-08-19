@@ -12,7 +12,7 @@ Tools to automatically extract Hashlink bytecode from Dead Cells and configure t
 
 ### Prerequisites
 
-- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
+- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) or v35 (The End is Near Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
 - [Python 3.10+](https://www.python.org/downloads/) or [pyenv](https://pyenv-win.github.io/pyenv-win/) and pip (This repository is configured to automatically use 3.10.11 if you have pyenv installed)
 - An Internet connection (I hope you have one of these already...)
 
