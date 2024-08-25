@@ -1,2 +1,7 @@
 test/
 env/
+PakTool/.vs/
+PakTool/bin/
+PakTool/obj/
+PakTool/PAKTool.pdb
+*ref.hx

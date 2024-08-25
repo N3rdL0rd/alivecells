@@ -62,6 +62,8 @@ options:
   --in-game-dir    Save the Hashlink bytecode in the Dead Cells game directory as well as the current directory.
 ```
 
+Other tools are provided as standalone executables, such as the patched PAKTool, which you can either clone and build yourself, or get from the [Releases](https://github.com/N3rdL0rd/alivecells/releases).
+
 ## Known Issues
 
 - When running in a seperate directory than the original Steam installation, the game will fail to sync Steam Cloud saves. This can be fixed by symlinking the `save` directory in the game directory to the original Steam installation directory, but this is only a temporary fix - a proper solution is being worked on.
