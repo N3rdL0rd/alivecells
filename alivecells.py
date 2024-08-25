@@ -9,14 +9,21 @@ import win32api # type: ignore
 import win32con # type: ignore
 from pathlib import Path
 import vdf
+import struct
+import hashlib
+import itertools
 
 # region Constants
 OUTPUT = "hlboot.dat" # Default output filename
-MAGIC_HEADER = b"\x48\x4C\x42" # "HLB" for hashlink bytecode
+MAGIC_HEADER = b"\x48\x4c\x42" # "HLB" for hashlink bytecode
 END_PADDING = b"\x58\x50\x41\x44\x44\x49\x4e\x47\x50\x41\x44\x44\x49\x4e\x47\x58" # "XPADDINGPADDINGX" repeating until the nearest 64-byte boundary
 HLVM_URL = "https://github.com/HaxeFoundation/hashlink/releases/download/1.10/hl-1.10.0-win.zip"
 GOLDBERG_URL = "https://gitlab.com/Mr_Goldberg/goldberg_emulator/-/jobs/4247811310/artifacts/download" # sometimes the game will complain about the steam api not working - we can bypass this with goldberg
 GOLDBERG_DLL = "steam_api.dll"
+# For repak-ing
+BOUNDARY = b"\x00\x01\x25\x00\x00\x00\x05"
+PAK_HEADER = b"PAK"
+BUFFER_SIZE = 1024 * 1024  # 1 MB buffer
 # endregion
 
 # region Utility functions
@@ -90,6 +97,13 @@ def add_steam_shortcut(app_name, exe_path, steam_path="C:/Program Files (x86)/St
         shutil.copy(grid_path, artwork_path / f"{app_id}.png")
     if p_path:
         shutil.copy(p_path, artwork_path / f"{app_id}p.png")
+
+def generate_commit_stamp(commit: str):
+    m = hashlib.sha256()
+    m.update("Dc02&0hQC#G0:".encode("utf-8"))
+    m.update(commit.encode("utf-8"))
+    return m.hexdigest()
+
 # endregion
 
 # region Main functions
@@ -171,6 +185,37 @@ def repair(dir, game_path, output="hlboot.dat", restore_respak=False):
         copy_file_with_progress(os.path.join(game_path, "res.pak"), os.path.join(dir, "res.pak"), msg="Restoring res.pak")
     print("Hashlink bytecode restored and saved to \"{}\".".format(os.path.join(dir, output)))
     print("Repair complete.")
+
+
+def commitbrute(pak):
+    f = open(pak, "rb")
+    header = f.read(3)
+    if header != PAK_HEADER:
+        raise ValueError("Incorrect header found")
+    file_ver = struct.unpack(">B", f.read(1))[0]
+    if file_ver != 1:
+        raise ValueError("Incorrect file version found!")
+    print("Everything seems okay.")
+    header_len = struct.unpack(">I", f.read(4))[0]
+    print("Header length:", header_len)
+    f.read(4)
+    stamp = f.read(64)
+    f.close()
+    print("Got stamp:", stamp)
+    if stamp == "":
+        raise ValueError("No stamp found")
+    found_hash = None
+    for combination in tqdm(itertools.product('0123456789abcdef', repeat=7), total=16**7, desc="Bruteforcing commit hash", unit=" hashes"):
+        short_hash = ''.join(combination)
+        generated_stamp = generate_commit_stamp(short_hash)
+        if generated_stamp.encode() == stamp:
+            found_hash = short_hash
+            break
+    if found_hash:
+        print("Found hash!\n  >", found_hash)
+    else:
+        print("No hash found.")
+
 # endregion
 
 # region Main
@@ -199,6 +244,9 @@ if __name__ == "__main__":
     steam_parser = subparsers.add_parser("steam", help="Add a shortcut to your Steam Library for the Hashlink VM installation.")
     steam_parser.add_argument("dir", help="The directory containing the Hashlink VM installation.")
 
+    commitbrute_parser = subparsers.add_parser("commitbrute", help="Find the short commit hash that the game was built from through a brute-force method (v35+ only!)")
+    commitbrute_parser.add_argument("pak", help="The signed pak to brute-force")
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -222,6 +270,8 @@ if __name__ == "__main__":
                            hero_path=os.path.join(os.path.dirname(__file__), "assets", "hero.png"), \
                            grid_path=os.path.join(os.path.dirname(__file__), "assets", "grid.png"), \
                            p_path=os.path.join(os.path.dirname(__file__), "assets", "grid2.png"))
+    elif args.command == "commitbrute":
+        commitbrute(args.pak)
     else:
         raise ValueError("Invalid command.")
 # endregion
