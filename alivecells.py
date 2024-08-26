@@ -23,7 +23,6 @@ GOLDBERG_DLL = "steam_api.dll"
 # For repak-ing
 BOUNDARY = b"\x00\x01\x25\x00\x00\x00\x05"
 PAK_HEADER = b"PAK"
-BUFFER_SIZE = 1024 * 1024  # 1 MB buffer
 # endregion
 
 # region Utility functions
@@ -187,20 +186,23 @@ def repair(dir, game_path, output="hlboot.dat", restore_respak=False):
     print("Repair complete.")
 
 
-def commitbrute(pak):
-    f = open(pak, "rb")
-    header = f.read(3)
-    if header != PAK_HEADER:
-        raise ValueError("Incorrect header found")
-    file_ver = struct.unpack(">B", f.read(1))[0]
-    if file_ver != 1:
-        raise ValueError("Incorrect file version found!")
-    print("Everything seems okay.")
-    header_len = struct.unpack(">I", f.read(4))[0]
-    print("Header length:", header_len)
-    f.read(4)
-    stamp = f.read(64)
-    f.close()
+def commitbrute(pak, stamp):
+    if pak:
+        f = open(pak, "rb")
+        header = f.read(3)
+        if header != PAK_HEADER:
+            raise ValueError("Incorrect header found")
+        file_ver = struct.unpack(">B", f.read(1))[0]
+        if file_ver != 1:
+            raise ValueError("Incorrect file version found!")
+        print("Everything seems okay.")
+        header_len = struct.unpack(">I", f.read(4))[0]
+        print("Header length:", header_len)
+        f.read(4)
+        stamp = f.read(64)
+        f.close()
+    if type(stamp) == str:
+        stamp = stamp.encode()
     print("Got stamp:", stamp)
     if stamp == "":
         raise ValueError("No stamp found")
@@ -245,7 +247,8 @@ if __name__ == "__main__":
     steam_parser.add_argument("dir", help="The directory containing the Hashlink VM installation.")
 
     commitbrute_parser = subparsers.add_parser("commitbrute", help="Find the short commit hash that the game was built from through a brute-force method (v35+ only!)")
-    commitbrute_parser.add_argument("pak", help="The signed pak to brute-force")
+    commitbrute_parser.add_argument("-p", "--pak", help="The signed pak to brute-force")
+    commitbrute_parser.add_argument("-s", "--stamp", help="The stamp to bruteforce")
 
     args = parser.parse_args()
 
@@ -271,7 +274,7 @@ if __name__ == "__main__":
                            grid_path=os.path.join(os.path.dirname(__file__), "assets", "grid.png"), \
                            p_path=os.path.join(os.path.dirname(__file__), "assets", "grid2.png"))
     elif args.command == "commitbrute":
-        commitbrute(args.pak)
+        commitbrute(args.pak, args.stamp)
     else:
         raise ValueError("Invalid command.")
 # endregion
