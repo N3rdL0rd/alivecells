@@ -102,7 +102,6 @@ def generate_commit_stamp(commit: str):
     m.update("Dc02&0hQC#G0:".encode("utf-8"))
     m.update(commit.encode("utf-8"))
     return m.hexdigest()
-
 # endregion
 
 # region Main functions
@@ -218,6 +217,8 @@ def commitbrute(pak, stamp):
     else:
         print("No hash found.")
 
+def save_editor(path):
+    
 # endregion
 
 # region Main
