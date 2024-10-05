@@ -217,7 +217,7 @@ def commitbrute(pak, stamp):
     else:
         print("No hash found.")
 
-def save_editor(path):
+#def save_editor(path):
     
 # endregion
 
@@ -251,6 +251,9 @@ if __name__ == "__main__":
     commitbrute_parser.add_argument("-p", "--pak", help="The signed pak to brute-force")
     commitbrute_parser.add_argument("-s", "--stamp", help="The stamp to bruteforce")
 
+    stampfor_parser = subparsers.add_parser("stampfor", help="Calculate the PAK stamp for a given short commit hash (v35+ only!)")
+    stampfor_parser.add_argument("commit", help="The commit to calculate the stamp for")
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -276,6 +279,9 @@ if __name__ == "__main__":
                            p_path=os.path.join(os.path.dirname(__file__), "assets", "grid2.png"))
     elif args.command == "commitbrute":
         commitbrute(args.pak, args.stamp)
+    elif args.command == "stampfor":
+        print(f"Stamp for {args.commit}: {generate_commit_stamp(args.commit)}")
+
     else:
         raise ValueError("Invalid command.")
 # endregion
