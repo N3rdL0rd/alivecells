@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dead Cells Stamp Calculator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .floating-container {
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.692);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+        input, button {
+            border: none;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+        small {
+            display: block;
+            margin-top: 20px;
+        }
+        details {
+            margin-top: 20px;
+        }
+        a {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-container">
+        <h1>Dead Cells Stamp Calculator</h1>
+        <label for="commit">Short commit hash:</label>
+        <input type="text" id="commit" placeholder="e.g. 50ed44f" style="width: 100%; padding: 5px; margin: 10px 0;">
+        <p>OR</p>
+        <label for="upload">Upload your res.pak:</label>
+        <input type="file" id="upload" style="width: 100%; padding: 5px; margin: 10px 0;" accept=".pak">
+        <button id="calculate" style="padding: 5px 10px; margin: 10px 0;">Calculate</button>
+        <p id="result_container" class="hidden" style="margin: 10px 0;">
+            Your stamp:
+            <span id="result" style="background: rgba(0, 0, 0, 0.5); padding: 5px; border-radius: 5px; font-family: monospace;"></span>
+        </p>
+        <details>
+            <summary>What is this?</summary>
+            <p>
+                In Dead Cells v35, the PAK standard was updated to version <code>1</code> and a 64-byte ASCII string was added to the header. This string is referred to in the code as the "stamp" and is generated using a not-so-secret formula from the game's short commit hash. This tool allows you to generate a valid stamp from a commit hash or extract it from your res.pak file for modding purposes.
+            </p>
+        </details>
+        <details>
+            <summary>How do I use it?</summary>
+            <p>
+                To generate a stamp from a commit hash, simply enter the short commit hash for your game (see image below) in the input field and click the "Calculate" button. To extract the stamp from your res.pak file, click the "Choose File" button and select your res.pak file, then click the "Calculate" button. The stamp will be displayed below the button.
+            </p>
+            <img src="commit_hash.png" alt="Commit hash location in Dead Cells" style="width: 100%; max-width: 400px; margin: 10px 0;">
+        </details>
+        <details>
+            <summary>What do I do with the stamp once I have it?</summary>
+            <p>
+                Once you have a stamp, you can pass it to my <a href="https://github.com/N3rdL0rd/alivecells/releases" target="_blank">modified PAKTool</a> with the <code>-s</code> flag, eg:
+            </p>
+            <pre>PAKTool.exe collapsev1 expanded res_collapsed.pak -s STAMP_HERE</pre>
+        </details>
+        <small>This tool made with ❤️ by N3rdL0rd.</small>
+    </div>
+
+    <script>
+        async function generateCommitStamp() {
+            const commit = document.getElementById('commit').value;
+            const hash = await sha256("Dc02&0hQC#G0:" + commit);
+            document.getElementById('result').innerText = hash;
+        }
+
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        document.getElementById('calculate').addEventListener('click', async () => {
+            const commit = document.getElementById('commit').value;
+            const upload = document.getElementById('upload').files[0];
+            if (!commit && !upload) {
+                alert('Please provide a commit hash or upload a res.pak file.');
+                return;
+            }
+
+            if (commit) {
+                console.log('Generating stamp from commit hash...');
+                await generateCommitStamp();
+                document.getElementById('result_container').classList.remove('hidden');
+            } else {
+                console.log('Reading stamp from res.pak...');
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    const dataView = new DataView(arrayBuffer);
+
+                    const magicBytes = String.fromCharCode(dataView.getUint8(0)) + String.fromCharCode(dataView.getUint8(1)) + String.fromCharCode(dataView.getUint8(2));
+                    const version = dataView.getUint8(3);
+
+                    if (magicBytes !== 'PAK') {
+                        alert('This doesn\'t look like a pak file.');
+                        return;
+                    }
+                    if (version !== 1) {
+                        alert('This tool only supports v1 pak files. You have a v' + version + ' pak file.');
+                        return;
+                    }
+
+                    const stampStart = 12;
+                    const stampEnd = stampStart + 64;
+
+                    let stamp = '';
+                    for (let i = stampStart; i < stampEnd; i++) {
+                        stamp += String.fromCharCode(dataView.getUint8(i));
+                    }
+
+                    document.getElementById('result').innerText = stamp;
+                };
+
+                reader.readAsArrayBuffer(upload);
+                document.getElementById('result_container').classList.remove('hidden');
+                document.getElementById('result').innerText = 'Loading...';
+            }
+        });
+    </script>
+</body>
+</html>
