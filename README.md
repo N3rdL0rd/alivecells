@@ -1,15 +1,18 @@
 # Alive Cells
 
-Tools to automatically extract Hashlink bytecode from Dead Cells and configure the game to run externally in a more moddable environment.
+A toolkit for modding Dead Cells
 
 ## Installation
 
 > [!NOTE]
 > This project is still in development and is not yet quite ready for public use. It is provided here purely to allow for others to play with the game in ways previously not possible.
 
+> [!WARNING]
+> This is a Windows-only script. On Linux and MacOS, the game is already configured in such a way as to easily facilitate modding.
+
 ### Prerequisites
 
-- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
+- [Dead Cells](https://store.steampowered.com/app/588650/Dead_Cells/) v34 (Clean Cut Update) or v35 (The End is Near Update) for Windows (This was tested with the Steam version of the game, but any distribution should work)
 - [Python 3.10+](https://www.python.org/downloads/) or [pyenv](https://pyenv-win.github.io/pyenv-win/) and pip (This repository is configured to automatically use 3.10.11 if you have pyenv installed)
 - An Internet connection (I hope you have one of these already...)
 
@@ -58,6 +61,8 @@ options:
   --output OUTPUT  The output filename for the Hashlink bytecode.
   --in-game-dir    Save the Hashlink bytecode in the Dead Cells game directory as well as the current directory.
 ```
+
+Other tools are provided as standalone executables, such as the patched PAKTool, which you can either clone and build yourself, or get from the [Releases](https://github.com/N3rdL0rd/alivecells/releases).
 
 ## Known Issues
 

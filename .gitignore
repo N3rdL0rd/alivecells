@@ -2,3 +2,8 @@ test/
 env/
 deadcells/
 *.dat
+*.vs/
+*bin/
+*obj/
+*.pdb
+*ref.hx

@@ -1,0 +1,16 @@
+[
+    {
+        "stamp": "f5601c10de243a6dcc424121ee4bcc2b9b36323a15a0dd00312f61b3e704c71f",
+        "commit": "f8349ab",
+        "platforms": ["windows", "linux", "macos"],
+        "distributions": ["steam"],
+        "version": 35
+    },
+    {
+        "stamp": "878899cc83f1960923243e3f667d01fdfab693f21ed7c27bd9906cb9c301288c",
+        "commit": "62334b0",
+        "platforms": ["linux"],
+        "distributions": ["gog"],
+        "version": 35
+    }
+]
