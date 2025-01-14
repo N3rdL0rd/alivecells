@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33801.468
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AtlasTool", "AtlasTool.csproj", "{4992DED3-6243-49AB-8CAA-4C6A0A00D090}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4992DED3-6243-49AB-8CAA-4C6A0A00D090}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4992DED3-6243-49AB-8CAA-4C6A0A00D090}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4992DED3-6243-49AB-8CAA-4C6A0A00D090}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4992DED3-6243-49AB-8CAA-4C6A0A00D090}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E49D20BB-970D-4317-8F50-93963BD12D3E}
+	EndGlobalSection
+EndGlobal
