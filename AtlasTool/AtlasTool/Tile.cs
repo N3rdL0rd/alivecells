@@ -12,19 +12,19 @@ internal class Tile
 
 	public int y;//图块左上角y像素坐标
 
-    public int width;//图块宽
+	public int width;//图块宽
 
 	public int height;//图块高
 
 	public int offsetX;//图块在新图中的左上角x像素坐标
 
-    public int offsetY;//图块在新图中的左上角y像素坐标
+    	public int offsetY;//图块在新图中的左上角y像素坐标
 
-    public int originalWidth;//新图宽
+	public int originalWidth;//新图宽
 
-    public int originalHeight; //新图高
+	public int originalHeight; //新图高
 
-    public string originalFilePath;
+	public string originalFilePath;
 
 	public Bitmap bitmap;
 
