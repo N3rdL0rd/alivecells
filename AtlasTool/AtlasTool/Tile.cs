@@ -1,28 +1,28 @@
 using System.Drawing;
 
 namespace AtlasTool;
-//Í¼¿éÀàÓÃÓÚ´æ·ÅÒ»¸öÍ¼¿é¾ßÓĞµÄĞÅÏ¢
+//å›¾å—ç±»ç”¨äºå­˜æ”¾ä¸€ä¸ªå›¾å—å…·æœ‰çš„ä¿¡æ¯
 internal class Tile
 {
-	public string name;//Í¼¿éÃû
+	public string name;//å›¾å—å
 
-	public int index;//Ë÷Òı
+	public int index;//ç´¢å¼•
 
-	public int x;//Í¼¿é×óÉÏ½ÇxÏñËØ×ø±ê
+	public int x;//å›¾å—å·¦ä¸Šè§’xåƒç´ åæ ‡
 
-	public int y;//Í¼¿é×óÉÏ½ÇyÏñËØ×ø±ê
+	public int y;//å›¾å—å·¦ä¸Šè§’yåƒç´ åæ ‡
 
-    public int width;//Í¼¿é¿í
+    public int width;//å›¾å—å®½
 
-	public int height;//Í¼¿é¸ß
+	public int height;//å›¾å—é«˜
 
-	public int offsetX;//Í¼¿éÔÚĞÂÍ¼ÖĞµÄ×óÉÏ½ÇxÏñËØ×ø±ê
+	public int offsetX;//å›¾å—åœ¨æ–°å›¾ä¸­çš„å·¦ä¸Šè§’xåƒç´ åæ ‡
 
-    public int offsetY;//Í¼¿éÔÚĞÂÍ¼ÖĞµÄ×óÉÏ½ÇyÏñËØ×ø±ê
+    public int offsetY;//å›¾å—åœ¨æ–°å›¾ä¸­çš„å·¦ä¸Šè§’yåƒç´ åæ ‡
 
-    public int originalWidth;//ĞÂÍ¼¿í
+    public int originalWidth;//æ–°å›¾å®½
 
-    public int originalHeight; //ĞÂÍ¼¸ß
+    public int originalHeight; //æ–°å›¾é«˜
 
     public string originalFilePath;
 
@@ -32,5 +32,5 @@ internal class Tile
 
 	public Tile duplicateOf;
 
-	public int atlasIndex;// ÊôÓÚµÚ¼¸ÕÅ´óÍ¼
+	public int atlasIndex = -1;// å±äºç¬¬å‡ å¼ å¤§å›¾
 }
