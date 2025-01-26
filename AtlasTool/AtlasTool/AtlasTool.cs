@@ -16,10 +16,10 @@ internal class AtlasTool
 	private static byte[] buffer = new byte[67108864];
 	private int c = 0;
 	private Dictionary<string, Tile> hashes = new Dictionary<string, Tile>();
-    //_atlasPath : atlasÎÄ¼şÂ·¾¶£¬_outDirPath : Í¼Æ¬Êä³öÂ·¾¶
-    public void Expand(string _atlasPath, string _outDirPath)
+	//_atlasPath : atlasæ–‡ä»¶è·¯å¾„ï¼Œ_outDirPath : å›¾ç‰‡è¾“å‡ºè·¯å¾„
+	public void Expand(string _atlasPath, string _outDirPath)
 	{
-		//Èç¹ûÊä³öÂ·¾¶ÓĞÎÄ¼ş´æÔÚ£¬ÔòÉ¾¸É¾»¡£²»´æÔÚÔò´´½¨
+		//å¦‚æœè¾“å‡ºè·¯å¾„æœ‰æ–‡ä»¶å­˜åœ¨ï¼Œåˆ™åˆ å¹²å‡€ã€‚ä¸å­˜åœ¨åˆ™åˆ›å»º
 		DirectoryInfo directoryInfo = new DirectoryInfo(_outDirPath);
 		if (directoryInfo.Exists)
 		{
@@ -27,69 +27,65 @@ internal class AtlasTool
 		}
 		directoryInfo.Create();
 
-		//´ò¿ª.atlasÎÄ¼ş¡£ÊµÀı»¯ÎÄ¼şÁ÷Óë¶ş½øÖÆ¶ÁÈ¡Æ÷¡£
+		//æ‰“å¼€.atlasæ–‡ä»¶ã€‚å®ä¾‹åŒ–æ–‡ä»¶æµä¸äºŒè¿›åˆ¶è¯»å–å™¨ã€‚
 		FileInfo fileInfo = new FileInfo(_atlasPath);
 		fileInfo.Name.Substring(0, fileInfo.Name.Length - 6);
 		Stream stream = File.OpenRead(_atlasPath);
 		BinaryReader binaryReader = new BinaryReader(stream);
 
-		//¶ÁÈ¡Ç°ËÄ¸ö×Ö·û£¬¼´BATL
+		//è¯»å–å‰å››ä¸ªå­—ç¬¦ï¼Œå³BATL
 		string BATL =  new string(binaryReader.ReadChars(4));
-        // Console.WriteLine("BATL£º" + BATL);
-
-        //½øÈëµÚÒ»²ãÑ­»·¡£
-        while (binaryReader.BaseStream.Position + 18 < stream.Length)//Èç¹ûµ±Ç°Á÷µÄÎ»ÖÃ + 18 Ğ¡ÓÚÁ÷µÄ³¤¶È£¬Ôò¼ÌĞøÏÂÈ¥¡£
+		// Console.WriteLine("BATLï¼š" + BATL);
+		
+		//è¿›å…¥ç¬¬ä¸€å±‚å¾ªç¯ã€‚
+        	while (binaryReader.BaseStream.Position + 18 < stream.Length)//å¦‚æœå½“å‰æµçš„ä½ç½® + 18 å°äºæµçš„é•¿åº¦ï¼Œåˆ™ç»§ç»­ä¸‹å»ã€‚
 		{
-			//ĞÂ½¨Ò»¸öÁĞ±í£¬ÓÃÓÚ´æ·ÅÍ¼¿éÀà
+			//æ–°å»ºä¸€ä¸ªåˆ—è¡¨ï¼Œç”¨äºå­˜æ”¾å›¾å—ç±»
 			List<Tile> list = new List<Tile>();
-			string text = ReadString(binaryReader);//¶ÁÈ¡´óÍ¼Æ¬µÄÃû³Æ£¬Èçbeheaded0.png£¬beheaded1.png
-            // Console.WriteLine("Í¼Æ¬Ãû³Æ£º" + text);
-            if (text == "")//Èç¹ûÃ»ÓĞ¶Áµ½¶«Î÷¾ÍÍË³öÑ­»·
-			{
+			string text = ReadString(binaryReader);//è¯»å–å¤§å›¾ç‰‡çš„åç§°ï¼Œå¦‚beheaded0.pngï¼Œbeheaded1.png
+            		// Console.WriteLine("å›¾ç‰‡åç§°ï¼š" + text);
+            		if (text == "")//å¦‚æœæ²¡æœ‰è¯»åˆ°ä¸œè¥¿å°±é€€å‡ºå¾ªç¯
 				break;
-			}
-			//½øÈëµÚ¶ş²ãÑ­»·
-			while (binaryReader.BaseStream.Position + 18 < stream.Length)//±ÜÃâ¶Áµ½ÎÄ¼ş½áÎ²ÒÔÍâ
+			//è¿›å…¥ç¬¬äºŒå±‚å¾ªç¯
+			while (binaryReader.BaseStream.Position + 18 < stream.Length)//é¿å…è¯»åˆ°æ–‡ä»¶ç»“å°¾ä»¥å¤–
 			{
-				Tile tile = new Tile();//ÊµÀı»¯Ò»¸öÍ¼¿é£¬²»ÊÇÌ©À­ÀïµÄ
-				tile.name = ReadString(binaryReader);//¶ÁÈ¡Ãû³Æ£¬ÈçatkA_00£¬ atkA_01¡£
-                // Console.WriteLine("¶¯×÷Ãû³Æ£º"+ tile.name);
-                if (tile.name == "")//Èç¹ûÃ»ÓĞ¶Áµ½¶«Î÷¾ÍÍË³öÑ­»·
-                {
+				Tile tile = new Tile();//å®ä¾‹åŒ–ä¸€ä¸ªå›¾å—ï¼Œä¸æ˜¯æ³°æ‹‰é‡Œçš„
+				tile.name = ReadString(binaryReader);//è¯»å–åç§°ï¼Œå¦‚atkA_00ï¼Œ atkA_01ã€‚
+                		// Console.WriteLine("åŠ¨ä½œåç§°ï¼š"+ tile.name);
+                		if (tile.name == "")//å¦‚æœæ²¡æœ‰è¯»åˆ°ä¸œè¥¿å°±é€€å‡ºå¾ªç¯
 					break;
-                }//ReadUInt16()×÷ÓÃ£º´ÓÁ÷ÖĞ¶ÁÈ¡2×Ö½ÚÎŞ·ûºÅÕûÊı²¢½«Á÷µÄÎ»ÖÃÌáÉı2¸ö×Ö½Ú¡£
-                tile.index = binaryReader.ReadUInt16();
-                // Console.WriteLine("index£º" + tile.index);
-                tile.x = binaryReader.ReadUInt16();
-                // Console.WriteLine("X£º" + tile.x);
-                tile.y = binaryReader.ReadUInt16();
-                // Console.WriteLine("Y£º" + tile.y);
-                tile.width = binaryReader.ReadUInt16();
-                // Console.WriteLine("width£º" + tile.width);
-                tile.height = binaryReader.ReadUInt16();
-                // Console.WriteLine("height£º" + tile.height);
-                tile.offsetX = binaryReader.ReadUInt16();
-                // Console.WriteLine("offsetX£º" + tile.offsetX);
-                tile.offsetY = binaryReader.ReadUInt16();
-                // Console.WriteLine("offsetY£º" + tile.offsetY);
-                tile.originalWidth = binaryReader.ReadUInt16();
-                // Console.WriteLine("originalWidth£º" + tile.originalWidth);
-                tile.originalHeight = binaryReader.ReadUInt16();//¶ÁÁË9´Î£¬¹²18×Ö½Ú¡£Ñ­»·Ìõ¼şÀï + 18µÄÀ´Ô´¡£
-                // Console.WriteLine("originalHeight£º" + tile.originalHeight);
-                list.Add(tile);//½«Õâ¸öÍ¼¿éÌí¼Óµ½ÁĞ±íÖĞ
-			}//Ñ­»·¶şÄ©Î²
+				//ReadUInt16()ä½œç”¨ï¼šä»æµä¸­è¯»å–2å­—èŠ‚æ— ç¬¦å·æ•´æ•°å¹¶å°†æµçš„ä½ç½®æå‡2ä¸ªå­—èŠ‚ã€‚
+		                tile.index = binaryReader.ReadUInt16();
+		                // Console.WriteLine("indexï¼š" + tile.index);
+		                tile.x = binaryReader.ReadUInt16();
+		                // Console.WriteLine("Xï¼š" + tile.x);
+		                tile.y = binaryReader.ReadUInt16();
+		                // Console.WriteLine("Yï¼š" + tile.y);
+		                tile.width = binaryReader.ReadUInt16();
+		                // Console.WriteLine("widthï¼š" + tile.width);
+		                tile.height = binaryReader.ReadUInt16();
+		                // Console.WriteLine("heightï¼š" + tile.height);
+		                tile.offsetX = binaryReader.ReadUInt16();
+		                // Console.WriteLine("offsetXï¼š" + tile.offsetX);
+		                tile.offsetY = binaryReader.ReadUInt16();
+		                // Console.WriteLine("offsetYï¼š" + tile.offsetY);
+		                tile.originalWidth = binaryReader.ReadUInt16();
+		                // Console.WriteLine("originalWidthï¼š" + tile.originalWidth);
+		                tile.originalHeight = binaryReader.ReadUInt16();//è¯»äº†9æ¬¡ï¼Œå…±18å­—èŠ‚ã€‚å¾ªç¯æ¡ä»¶é‡Œ + 18çš„æ¥æºã€‚
+		                // Console.WriteLine("originalHeightï¼š" + tile.originalHeight);
+		                list.Add(tile);//å°†è¿™ä¸ªå›¾å—æ·»åŠ åˆ°åˆ—è¡¨ä¸­
+			}//å¾ªç¯äºŒæœ«å°¾
 			CreateBitmapTree(list, directoryInfo, fileInfo, text);
-			//Ñ­»·¶şÒ»½áÊø£¬¸ù¾İ´æÍ¼¿éµÄÁĞ±í£¬.atlasÎÄ¼ş£¬Êä³öÂ·¾¶£¬´óÍ¼Ãû³Æ Éú³É¸÷¸öĞÂÍ¼
+			//å¾ªç¯äºŒä¸€ç»“æŸï¼Œæ ¹æ®å­˜å›¾å—çš„åˆ—è¡¨ï¼Œ.atlasæ–‡ä»¶ï¼Œè¾“å‡ºè·¯å¾„ï¼Œå¤§å›¾åç§° ç”Ÿæˆå„ä¸ªæ–°å›¾
 
-            try//³¢ÊÔÉú³É·¨ÏßÌùÍ¼£¬Ã»ÓĞ·¨ÏßÌùÍ¼¾Í²»Éú³É
-            {
+			try//å°è¯•ç”Ÿæˆæ³•çº¿è´´å›¾ï¼Œæ²¡æœ‰æ³•çº¿è´´å›¾å°±ä¸ç”Ÿæˆ
+			{
 				CreateBitmapTree(list, directoryInfo, fileInfo, text.Substring(0, text.Length - 4) + "_n.png", "_n");
 			}
 			catch (Exception)
-			{
-			}
-		}//Ñ­»·Ò»Ä©Î²
-		binaryReader.Close();//Ñ­»·Ò»½áÊø¹Ø±ÕÁ÷
+			{}
+		}//å¾ªç¯ä¸€æœ«å°¾
+		binaryReader.Close();//å¾ªç¯ä¸€ç»“æŸå…³é—­æµ
 	}
 
 	public void CreateBitmapTree(List<Tile> _tiles, DirectoryInfo _outDir, FileInfo _atlasInfo, string _atlasName, string _suffix = "")
@@ -97,9 +93,8 @@ internal class AtlasTool
 		Bitmap bitmap = (Bitmap)Image.FromFile(Path.Combine(_atlasInfo.DirectoryName, _atlasName));
 		Directory.CreateDirectory(_outDir.FullName);
 		foreach (Tile _tile in _tiles)
-		{
 			CopyBitmapFromAtlas(_tile, _outDir.FullName, bitmap, _suffix);
-		}
+		
 		bitmap.Dispose();
 	}
 
@@ -117,7 +112,7 @@ internal class AtlasTool
 			where !file.Name.EndsWith("_n.png")
 			select file)
 		{
-            try
+			try
 			{
 				Bitmap bitmap = (Bitmap)Image.FromFile(item.FullName);
 				Tile _tile = new Tile();
@@ -146,9 +141,7 @@ internal class AtlasTool
 				{
 					list.Add(_tile);
 					if (_tile.width == 0)
-					{
 						throw new Exception("?? width should not be at 0, when height != 0");
-					}
 				}
 			}
 			catch (Exception ex)
@@ -160,19 +153,13 @@ internal class AtlasTool
 		list.Sort(delegate(Tile a, Tile b)
 		{
 			if (a.width > b.width)
-			{
 				return -1;
-			}
 			if (a.width == b.width)
 			{
 				if (a.height > b.height)
-				{
 					return -1;
-				}
 				if (a.height == b.height)
-				{
 					return 0;
-				}
 				return 1;
 			}
 			return 1;
@@ -193,10 +180,10 @@ internal class AtlasTool
 		if (_exportBinaryAtlases)
 		{
 			binaryWriter = new BinaryWriter(File.OpenWrite(_atlasPath.Substring(0, _atlasPath.Length - 4) + ".atlas"));
-            string text3 = "BATL";
-            // Console.WriteLine("£¡Ğ´Èë£º" + text3);
-            binaryWriter.Write(text3.ToCharArray());
-        }
+			string text3 = "BATL";
+            		// Console.WriteLine("ï¼å†™å…¥ï¼š" + text3);
+            		binaryWriter.Write(text3.ToCharArray());
+        	}
 		else
 		{
 			streamWriter = new StreamWriter(_atlasPath.Substring(0, _atlasPath.Length - 4) + ".atlas");
@@ -251,28 +238,28 @@ internal class AtlasTool
 					}
 					if (item2.atlasIndex == j)
 					{
-                        // Console.WriteLine("Ğ´Èë¶¯×÷Ãû³Æ£º" + item2.name);
-                        WriteString(binaryWriter, item2.name);
+			                        // Console.WriteLine("å†™å…¥åŠ¨ä½œåç§°ï¼š" + item2.name);
+			                        WriteString(binaryWriter, item2.name);
 						binaryWriter.Write((ushort)item2.index);
-						// Console.WriteLine("index£º" + (ushort)item2.index);
+						// Console.WriteLine("indexï¼š" + (ushort)item2.index);
 						binaryWriter.Write((ushort)(item2.x + 1));
-                        // Console.WriteLine("x£º" + (ushort)(item2.x + 1));
-                        binaryWriter.Write((ushort)(item2.y + 1));
-                        // Console.WriteLine("y£º" + (ushort)(item2.y + 1));
-                        binaryWriter.Write((ushort)item2.width);
-                        // Console.WriteLine("width£º" + (ushort)item2.width);
-                        binaryWriter.Write((ushort)item2.height);
-                        // Console.WriteLine("height£º" + (ushort)item2.height);
-                        binaryWriter.Write((ushort)item2.offsetX);
-                        // Console.WriteLine("offsetX£º" + (ushort)item2.offsetX);
-                        binaryWriter.Write((ushort)item2.offsetY);
-                        // Console.WriteLine("offsetY£º" + (ushort)item2.offsetY);
-                        binaryWriter.Write((ushort)item2.originalWidth);
-                        // Console.WriteLine("originalWidth£º" + (ushort)item2.originalWidth);
-                        binaryWriter.Write((ushort)item2.originalHeight);
-                        // Console.WriteLine("originalHeight£º" + (ushort)item2.originalHeight);
-                    }
-                }
+			                        // Console.WriteLine("xï¼š" + (ushort)(item2.x + 1));
+			                        binaryWriter.Write((ushort)(item2.y + 1));
+			                        // Console.WriteLine("yï¼š" + (ushort)(item2.y + 1));
+			                        binaryWriter.Write((ushort)item2.width);
+			                        // Console.WriteLine("widthï¼š" + (ushort)item2.width);
+			                        binaryWriter.Write((ushort)item2.height);
+			                        // Console.WriteLine("heightï¼š" + (ushort)item2.height);
+			                        binaryWriter.Write((ushort)item2.offsetX);
+			                        // Console.WriteLine("offsetXï¼š" + (ushort)item2.offsetX);
+			                        binaryWriter.Write((ushort)item2.offsetY);
+			                        // Console.WriteLine("offsetYï¼š" + (ushort)item2.offsetY);
+			                        binaryWriter.Write((ushort)item2.originalWidth);
+			                        // Console.WriteLine("originalWidthï¼š" + (ushort)item2.originalWidth);
+			                        binaryWriter.Write((ushort)item2.originalHeight);
+			                        // Console.WriteLine("originalHeightï¼š" + (ushort)item2.originalHeight);
+                    			}
+                		}
 				binaryWriter.Write((byte)0);
 			}
 			else
@@ -327,9 +314,7 @@ internal class AtlasTool
 		}
 		string text = array[array.Length - 1];
 		if (_tile.index != -1)
-		{
 			text = text + "-=-" + _tile.index + "-=-";
-		}
 		BitmapData bitmapData = _atlas.LockBits(new Rectangle(_tile.x, _tile.y, _tile.width, _tile.height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 		Bitmap bitmap = new Bitmap(_tile.originalWidth, _tile.originalHeight);
 		BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
@@ -361,23 +346,15 @@ internal class AtlasTool
 			for (int i = 0; i < _tile.originalHeight; i++)
 			{
 				if (flag)
-				{
 					break;
-				}
 				if (_tile.height <= 1)
-				{
 					break;
-				}
 				for (int j = 0; j < _tile.originalWidth; j++)
 				{
 					if (flag)
-					{
 						break;
-					}
 					if (_tile.height <= 1)
-					{
 						break;
-					}
 					flag = (Marshal.ReadInt32(bitmapData.Scan0 + (i * _tile.originalWidth + j) * 4) & 0xFF000000u) != 0;
 				}
 				if (!flag)
@@ -390,23 +367,15 @@ internal class AtlasTool
 			for (int k = 0; k < _tile.originalWidth; k++)
 			{
 				if (flag)
-				{
 					break;
-				}
 				if (_tile.width <= 1)
-				{
 					break;
-				}
 				for (int l = _tile.offsetY; l < _tile.originalHeight; l++)
 				{
 					if (flag)
-					{
 						break;
-					}
 					if (_tile.width <= 1)
-					{
 						break;
-					}
 					flag = (Marshal.ReadInt32(bitmapData.Scan0 + (l * _tile.originalWidth + k) * 4) & 0xFF000000u) != 0;
 				}
 				if (!flag)
@@ -422,13 +391,9 @@ internal class AtlasTool
 				for (int m = _tile.offsetX; m < _tile.originalWidth; m++)
 				{
 					if (flag)
-					{
 						break;
-					}
 					if (_tile.height <= 1)
-					{
 						break;
-					}
 					flag = (Marshal.ReadInt32(bitmapData.Scan0 + (num * _tile.originalWidth + m) * 4) & 0xFF000000u) != 0;
 				}
 				if (!flag)
@@ -444,13 +409,9 @@ internal class AtlasTool
 				for (int n = _tile.offsetY; n < _tile.originalHeight; n++)
 				{
 					if (flag)
-					{
 						break;
-					}
 					if (_tile.width <= 1)
-					{
 						break;
-					}
 					flag = (Marshal.ReadInt32(bitmapData.Scan0 + (n * _tile.originalWidth + num2) * 4) & 0xFF000000u) != 0;
 				}
 				if (!flag)
@@ -496,7 +457,10 @@ internal class AtlasTool
 				text = "reading new";
 
 				// BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(1, 1, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-				BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+				// BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+				int normalOffset = _bForceBitmapResizeAndPreventUpdateTileInfo ? 0 : 1;
+				BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(normalOffset, normalOffset, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+				
 				
 				for (int i = 0; i < height; i++)
 				{
@@ -521,7 +485,7 @@ internal class AtlasTool
 				_tile.width += 2;
 				_tile.height += 2;
 			}
-			/*
+			/* not necessary at all
 			text = "writing";
 			_ = $"_tile.offsetX = {_tile.offsetX}, _tile.offsetY = {_tile.offsetY}, _tile.width = {_tile.width}, _tile.height = {_tile.height}";
 			BitmapData bitmapData3 = _tile.bitmap.LockBits(new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
@@ -547,56 +511,56 @@ internal class AtlasTool
 		}
 	}
 
-    private void CopyBitmapToAtlas(Tile _tile, Bitmap _atlas)
-    {
-        if (_tile.bitmap != null) // È·±£Ô´Í¼Ïñ²»Îª¿Õ
-        {
-            try
-            {
-                // Ëø¶¨Ä¿±êÍ¼¼¯ÇøÓò£¬×¼±¸Ğ´ÈëÏñËØÊı¾İ
-                BitmapData bitmapData = _atlas.LockBits(
-                    new Rectangle(_tile.x, _tile.y, _tile.width, _tile.height),
-                    ImageLockMode.WriteOnly,
-                    PixelFormat.Format32bppArgb
-                );
+	private void CopyBitmapToAtlas(Tile _tile, Bitmap _atlas)
+	{
+		if (_tile.bitmap != null) // ç¡®ä¿æºå›¾åƒä¸ä¸ºç©º
+		{
+			try
+			{
+				// é”å®šç›®æ ‡å›¾é›†åŒºåŸŸï¼Œå‡†å¤‡å†™å…¥åƒç´ æ•°æ®
+				BitmapData bitmapData = _atlas.LockBits(
+				    new Rectangle(_tile.x, _tile.y, _tile.width, _tile.height),
+				    ImageLockMode.WriteOnly,
+				    PixelFormat.Format32bppArgb
+				);
+				
+				// é”å®šæºå›¾åƒåŒºåŸŸï¼Œå‡†å¤‡è¯»å–åƒç´ æ•°æ®
+				BitmapData bitmapData2 = _tile.bitmap.LockBits(
+				    new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height),
+				    ImageLockMode.ReadOnly,
+				    PixelFormat.Format32bppArgb
+				);
+				
+				// æŒ‰è¡Œå¤åˆ¶æ•°æ®
+				for (int i = 0; i < _tile.height; i++)
+				{
+					Core.CopyMemory(
+					bitmapData.Scan0 + i * bitmapData.Stride, // ç›®æ ‡å›¾åƒå½“å‰è¡Œçš„èµ·å§‹åœ°å€
+					bitmapData2.Scan0 + i * bitmapData2.Stride, // æºå›¾åƒå½“å‰è¡Œçš„èµ·å§‹åœ°å€
+					(uint)(_tile.width * 4) // æ¯è¡Œéœ€è¦å¤åˆ¶çš„å­—èŠ‚æ•°ï¼ˆæ¯ä¸ªåƒç´  4 å­—èŠ‚ï¼‰
+					);
+				}
+				// è§£é”ç›®æ ‡å›¾åƒå’Œæºå›¾åƒçš„å†…å­˜
+				_atlas.UnlockBits(bitmapData);
+				_tile.bitmap.UnlockBits(bitmapData2);
+			}
+			catch (Exception ex)
+			{
+				// è®°å½•é”™è¯¯æ—¥å¿—æˆ–è€…æŠ›å‡ºå¼‚å¸¸
+				Console.WriteLine("å¤åˆ¶å›¾åƒæ•°æ®æ—¶å‘ç”Ÿé”™è¯¯: " + ex.Message);
+			}
+		}
+	}
 
-                // Ëø¶¨Ô´Í¼ÏñÇøÓò£¬×¼±¸¶ÁÈ¡ÏñËØÊı¾İ
-                BitmapData bitmapData2 = _tile.bitmap.LockBits(
-                    new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height),
-                    ImageLockMode.ReadOnly,
-                    PixelFormat.Format32bppArgb
-                );
 
-                // °´ĞĞ¸´ÖÆÊı¾İ
-                for (int i = 0; i < _tile.height; i++)
-                {
-                    Core.CopyMemory(
-                        bitmapData.Scan0 + i * bitmapData.Stride, // Ä¿±êÍ¼Ïñµ±Ç°ĞĞµÄÆğÊ¼µØÖ·
-                        bitmapData2.Scan0 + i * bitmapData2.Stride, // Ô´Í¼Ïñµ±Ç°ĞĞµÄÆğÊ¼µØÖ·
-                        (uint)(_tile.width * 4) // Ã¿ĞĞĞèÒª¸´ÖÆµÄ×Ö½ÚÊı£¨Ã¿¸öÏñËØ 4 ×Ö½Ú£©
-                    );
-                }
-                // ½âËøÄ¿±êÍ¼ÏñºÍÔ´Í¼ÏñµÄÄÚ´æ
-                _atlas.UnlockBits(bitmapData);
-                _tile.bitmap.UnlockBits(bitmapData2);
-            }
-            catch (Exception ex)
-            {
-                // ¼ÇÂ¼´íÎóÈÕÖ¾»òÕßÅ×³öÒì³£
-                Console.WriteLine("¸´ÖÆÍ¼ÏñÊı¾İÊ±·¢Éú´íÎó: " + ex.Message);
-            }
-        }
-    }
-
-
-    private string ReadString(BinaryReader _reader)//ÕâÊÇ¶ÁÈ¡µÄ·½·¨
+	private string ReadString(BinaryReader _reader)//è¿™æ˜¯è¯»å–çš„æ–¹æ³•
 	{
 		int num = _reader.ReadByte();
-		// Console.WriteLine("¶Áµ½Byte³¤¶È£º" + num);
+		// Console.WriteLine("è¯»åˆ°Byteé•¿åº¦ï¼š" + num);
 		if (num == 255)
 		{
-            // Console.WriteLine("¶Áµ½Byte³¤¶ÈÎª255£¡¶Áµ½UInt16³¤¶È£º" + num);
-            num = _reader.ReadUInt16();
+			// Console.WriteLine("è¯»åˆ°Byteé•¿åº¦ä¸º255ï¼è¯»åˆ°UInt16é•¿åº¦ï¼š" + num);
+			num = _reader.ReadUInt16();
 		}
 		if (num != 0)
 		{
@@ -607,15 +571,11 @@ internal class AtlasTool
 
 	private void WriteString(BinaryWriter _writer, string _stringToWrite)
 	{
-		// Console.WriteLine("Ğ´Èë×Ö·û´®£º" + _stringToWrite + "³¤¶È£º" + _stringToWrite.Length);
-        if (_stringToWrite.Length >= 255)
-		{
-			_writer.Write((ushort)_stringToWrite.Length);
-		}
-		else
-		{
-			_writer.Write((byte)_stringToWrite.Length);
-		}
+	// Console.WriteLine("å†™å…¥å­—ç¬¦ä¸²ï¼š" + _stringToWrite + "é•¿åº¦ï¼š" + _stringToWrite.Length);
+	if (_stringToWrite.Length >= 255)
+		_writer.Write((ushort)_stringToWrite.Length);
+	else
+		_writer.Write((byte)_stringToWrite.Length);
 		_writer.Write(_stringToWrite.ToCharArray());
 	}
 }
