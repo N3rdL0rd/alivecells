@@ -16,10 +16,10 @@ internal class AtlasTool
 	private static byte[] buffer = new byte[67108864];
 	private int c = 0;
 	private Dictionary<string, Tile> hashes = new Dictionary<string, Tile>();
-	//_atlasPath : atlas文件路径，_outDirPath : 图片输出路径
+
+	/* The fix of binary collapse method is based on this method. */
 	public void Expand(string _atlasPath, string _outDirPath)
 	{
-		//如果输出路径有文件存在，则删干净。不存在则创建
 		DirectoryInfo directoryInfo = new DirectoryInfo(_outDirPath);
 		if (directoryInfo.Exists)
 		{
@@ -27,65 +27,50 @@ internal class AtlasTool
 		}
 		directoryInfo.Create();
 
-		//打开.atlas文件。实例化文件流与二进制读取器。
 		FileInfo fileInfo = new FileInfo(_atlasPath);
 		fileInfo.Name.Substring(0, fileInfo.Name.Length - 6);
 		Stream stream = File.OpenRead(_atlasPath);
 		BinaryReader binaryReader = new BinaryReader(stream);
 
-		//读取前四个字符，即BATL
+		// read the first four char: BATL
 		string BATL =  new string(binaryReader.ReadChars(4));
-		// Console.WriteLine("BATL：" + BATL);
-		
 		//进入第一层循环。
-        	while (binaryReader.BaseStream.Position + 18 < stream.Length)//如果当前流的位置 + 18 小于流的长度，则继续下去。
+        	while (binaryReader.BaseStream.Position + 18 < stream.Length)
 		{
-			//新建一个列表，用于存放图块类
-			List<Tile> list = new List<Tile>();
-			string text = ReadString(binaryReader);//读取大图片的名称，如beheaded0.png，beheaded1.png
-            		// Console.WriteLine("图片名称：" + text);
-            		if (text == "")//如果没有读到东西就退出循环
+			List<Tile> list = new List<Tile>(); // Tile class contains all position information of each frame animation textures.
+			string text = ReadString(binaryReader); // Read the packaged big texture name, like beheaded0.png，beheaded1.png
+            		if (text == "")
 				break;
 			//进入第二层循环
-			while (binaryReader.BaseStream.Position + 18 < stream.Length)//避免读到文件结尾以外
+			while (binaryReader.BaseStream.Position + 18 < stream.Length)
 			{
-				Tile tile = new Tile();//实例化一个图块，不是泰拉里的
-				tile.name = ReadString(binaryReader);//读取名称，如atkA_00， atkA_01。
-                		// Console.WriteLine("动作名称："+ tile.name);
-                		if (tile.name == "")//如果没有读到东西就退出循环
+				Tile tile = new Tile();
+				tile.name = ReadString(binaryReader);// Read current animation frame name, like: atkA_00， atkA_01。
+                		if (tile.name == "")
 					break;
-				//ReadUInt16()作用：从流中读取2字节无符号整数并将流的位置提升2个字节。
-		                tile.index = binaryReader.ReadUInt16();
-		                // Console.WriteLine("index：" + tile.index);
-		                tile.x = binaryReader.ReadUInt16();
-		                // Console.WriteLine("X：" + tile.x);
-		                tile.y = binaryReader.ReadUInt16();
-		                // Console.WriteLine("Y：" + tile.y);
-		                tile.width = binaryReader.ReadUInt16();
-		                // Console.WriteLine("width：" + tile.width);
-		                tile.height = binaryReader.ReadUInt16();
-		                // Console.WriteLine("height：" + tile.height);
-		                tile.offsetX = binaryReader.ReadUInt16();
-		                // Console.WriteLine("offsetX：" + tile.offsetX);
-		                tile.offsetY = binaryReader.ReadUInt16();
-		                // Console.WriteLine("offsetY：" + tile.offsetY);
-		                tile.originalWidth = binaryReader.ReadUInt16();
-		                // Console.WriteLine("originalWidth：" + tile.originalWidth);
-		                tile.originalHeight = binaryReader.ReadUInt16();//读了9次，共18字节。循环条件里 + 18的来源。
-		                // Console.WriteLine("originalHeight：" + tile.originalHeight);
-		                list.Add(tile);//将这个图块添加到列表中
-			}//循环二末尾
+		                tile.index = binaryReader.ReadUInt16(); // always 0
+		                tile.x = binaryReader.ReadUInt16(); // Horizontal position of the top-left pixel of the current frame in the big texture.
+		                tile.y = binaryReader.ReadUInt16(); // Vertical position of the top-left pixel of the current frame in the big texture.
+		                tile.width = binaryReader.ReadUInt16(); // Width of current frame.
+		                tile.height = binaryReader.ReadUInt16(); // Height of current frame.
+				// When finishing the Expand action, you can see each frame are splited into single small textures.
+		                tile.offsetX = binaryReader.ReadUInt16(); // Horizontal position of the top-left pixel of the current frame in the small texture.
+		                tile.offsetY = binaryReader.ReadUInt16(); // Vertical position of the top-left pixel of the current frame in the small texture.
+		                tile.originalWidth = binaryReader.ReadUInt16(); // Width of the small texture.
+		                tile.originalHeight = binaryReader.ReadUInt16(); // Height of the small texture.
+				// The ReadUInt16() method was used for 9 time, each time it read 2 bytes, so the while condition requires + 18.
+		                list.Add(tile);
+			}
 			CreateBitmapTree(list, directoryInfo, fileInfo, text);
-			//循环二一结束，根据存图块的列表，.atlas文件，输出路径，大图名称 生成各个新图
 
-			try//尝试生成法线贴图，没有法线贴图就不生成
+			try // Check and expand the normal map.
 			{
 				CreateBitmapTree(list, directoryInfo, fileInfo, text.Substring(0, text.Length - 4) + "_n.png", "_n");
 			}
 			catch (Exception)
 			{}
-		}//循环一末尾
-		binaryReader.Close();//循环一结束关闭流
+		}
+		binaryReader.Close();
 	}
 
 	public void CreateBitmapTree(List<Tile> _tiles, DirectoryInfo _outDir, FileInfo _atlasInfo, string _atlasName, string _suffix = "")
@@ -179,9 +164,9 @@ internal class AtlasTool
 		StreamWriter streamWriter = null;
 		if (_exportBinaryAtlases)
 		{
+			/* We only need this title once, so this should be written at first */
 			binaryWriter = new BinaryWriter(File.OpenWrite(_atlasPath.Substring(0, _atlasPath.Length - 4) + ".atlas"));
 			string text3 = "BATL";
-            		// Console.WriteLine("！写入：" + text3);
             		binaryWriter.Write(text3.ToCharArray());
         	}
 		else
@@ -223,6 +208,7 @@ internal class AtlasTool
 			}
 			if (_exportBinaryAtlases)
 			{
+				/* We only need this title once, so this should be written earlier. */
 				/*
 				string text3 = "BATL";
 				binaryWriter.Write(text3.ToCharArray());
@@ -238,26 +224,18 @@ internal class AtlasTool
 					}
 					if (item2.atlasIndex == j)
 					{
-			                        // Console.WriteLine("写入动作名称：" + item2.name);
 			                        WriteString(binaryWriter, item2.name);
 						binaryWriter.Write((ushort)item2.index);
-						// Console.WriteLine("index：" + (ushort)item2.index);
-						binaryWriter.Write((ushort)(item2.x + 1));
-			                        // Console.WriteLine("x：" + (ushort)(item2.x + 1));
-			                        binaryWriter.Write((ushort)(item2.y + 1));
-			                        // Console.WriteLine("y：" + (ushort)(item2.y + 1));
+						/* Delete the + 1 , which causes animation offset error and package error.*/
+						binaryWriter.Write((ushort)(item2.x));
+			                        binaryWriter.Write((ushort)(item2.y));
+						
 			                        binaryWriter.Write((ushort)item2.width);
-			                        // Console.WriteLine("width：" + (ushort)item2.width);
 			                        binaryWriter.Write((ushort)item2.height);
-			                        // Console.WriteLine("height：" + (ushort)item2.height);
 			                        binaryWriter.Write((ushort)item2.offsetX);
-			                        // Console.WriteLine("offsetX：" + (ushort)item2.offsetX);
 			                        binaryWriter.Write((ushort)item2.offsetY);
-			                        // Console.WriteLine("offsetY：" + (ushort)item2.offsetY);
 			                        binaryWriter.Write((ushort)item2.originalWidth);
-			                        // Console.WriteLine("originalWidth：" + (ushort)item2.originalWidth);
 			                        binaryWriter.Write((ushort)item2.originalHeight);
-			                        // Console.WriteLine("originalHeight：" + (ushort)item2.originalHeight);
                     			}
                 		}
 				binaryWriter.Write((byte)0);
@@ -458,6 +436,7 @@ internal class AtlasTool
 
 				// BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(1, 1, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 				// BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+				/* for normal map, (1, 1) offset is unnecessary*/
 				int normalOffset = _bForceBitmapResizeAndPreventUpdateTileInfo ? 0 : 1;
 				BitmapData bitmapData2 = bitmap.LockBits(new Rectangle(normalOffset, normalOffset, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 				
@@ -485,7 +464,8 @@ internal class AtlasTool
 				_tile.width += 2;
 				_tile.height += 2;
 			}
-			/* not necessary at all
+			/* not necessary at all, since the original textures didn't have repeats for the sprites’ pixels at the borders.*/
+   			/*	
 			text = "writing";
 			_ = $"_tile.offsetX = {_tile.offsetX}, _tile.offsetY = {_tile.offsetY}, _tile.width = {_tile.width}, _tile.height = {_tile.height}";
 			BitmapData bitmapData3 = _tile.bitmap.LockBits(new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
@@ -511,55 +491,48 @@ internal class AtlasTool
 		}
 	}
 
-	private void CopyBitmapToAtlas(Tile _tile, Bitmap _atlas)
+	private void CopyBitmapToAtlas(Tile _tile, Bitmap _atlas)/*didn't change any code, just add a try catch*/
 	{
-		if (_tile.bitmap != null) // 确保源图像不为空
+		if (_tile.bitmap != null)
 		{
 			try
 			{
-				// 锁定目标图集区域，准备写入像素数据
 				BitmapData bitmapData = _atlas.LockBits(
 				    new Rectangle(_tile.x, _tile.y, _tile.width, _tile.height),
 				    ImageLockMode.WriteOnly,
 				    PixelFormat.Format32bppArgb
 				);
 				
-				// 锁定源图像区域，准备读取像素数据
 				BitmapData bitmapData2 = _tile.bitmap.LockBits(
 				    new Rectangle(_tile.offsetX, _tile.offsetY, _tile.width, _tile.height),
 				    ImageLockMode.ReadOnly,
 				    PixelFormat.Format32bppArgb
 				);
 				
-				// 按行复制数据
 				for (int i = 0; i < _tile.height; i++)
 				{
 					Core.CopyMemory(
-					bitmapData.Scan0 + i * bitmapData.Stride, // 目标图像当前行的起始地址
-					bitmapData2.Scan0 + i * bitmapData2.Stride, // 源图像当前行的起始地址
-					(uint)(_tile.width * 4) // 每行需要复制的字节数（每个像素 4 字节）
+					bitmapData.Scan0 + i * bitmapData.Stride,
+					bitmapData2.Scan0 + i * bitmapData2.Stride,
+					(uint)(_tile.width * 4)
 					);
 				}
-				// 解锁目标图像和源图像的内存
 				_atlas.UnlockBits(bitmapData);
 				_tile.bitmap.UnlockBits(bitmapData2);
 			}
 			catch (Exception ex)
 			{
-				// 记录错误日志或者抛出异常
-				Console.WriteLine("复制图像数据时发生错误: " + ex.Message);
+				Console.WriteLine("Error when copy bitmaps: " + ex.Message);
 			}
 		}
 	}
 
-
-	private string ReadString(BinaryReader _reader)//这是读取的方法
+	/*how the binary .atlas file read the string in it*/
+	private string ReadString(BinaryReader _reader)
 	{
 		int num = _reader.ReadByte();
-		// Console.WriteLine("读到Byte长度：" + num);
 		if (num == 255)
 		{
-			// Console.WriteLine("读到Byte长度为255！读到UInt16长度：" + num);
 			num = _reader.ReadUInt16();
 		}
 		if (num != 0)
@@ -571,7 +544,6 @@ internal class AtlasTool
 
 	private void WriteString(BinaryWriter _writer, string _stringToWrite)
 	{
-	// Console.WriteLine("写入字符串：" + _stringToWrite + "长度：" + _stringToWrite.Length);
 	if (_stringToWrite.Length >= 255)
 		_writer.Write((ushort)_stringToWrite.Length);
 	else
