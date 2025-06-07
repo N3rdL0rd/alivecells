@@ -11,3 +11,6 @@ beheadedModHelper_tracks.json
 saves/
 *.blend
 *.blend1
+*.n
+output/
+out/
