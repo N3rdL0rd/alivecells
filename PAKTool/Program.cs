@@ -1,5 +1,4 @@
-﻿using ModTools;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Threading;
 
@@ -11,7 +10,7 @@ namespace PAKTool
 
         private static void Main(string[] args)
         {
-            Console.WriteLine($"----- N3rdL0rd's PakTool v0.1a (based on ModTools v{Versionning.currentVersion}) -----");
+            Console.WriteLine($"----- N3rdL0rd's PakTool v0.2 (based on ModTools v{Versionning.currentVersion}) -----");
             Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")

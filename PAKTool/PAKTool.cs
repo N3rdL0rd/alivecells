@@ -4,7 +4,6 @@
 // MVID: ECC9A4AB-62C6-4F7C-95CE-FBC3CF0F40A2
 // Assembly location: D:\SteamLibrary\steamapps\common\Dead Cells\ModTools\PAKTool.exe
 
-using ModTools;
 using System;
 using System.Collections.Generic;
 using System.IO;

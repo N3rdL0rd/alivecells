@@ -15,7 +15,7 @@ import struct
 import toml
 
 # --- Constants and Maps ---
-MAGIC_NUMBER = 0x11CEADDE
+MAGIC_NUMBER = 0x11CEADDE # DE AD CE 11
 CHECKSUM_OFFSET = 5
 CHECKSUM_SIZE = 20
 HEADER_FORMAT = "<I B 20s 20s 10s I"
