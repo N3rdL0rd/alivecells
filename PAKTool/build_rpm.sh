@@ -16,4 +16,5 @@ pushd bin/Release/net9.0/linux-x64/publish/
 popd
 cp ./paktool.spec ~/rpmbuild/SPECS/paktool.spec
 rpmbuild -ba ~/rpmbuild/SPECS/paktool.spec
-echo "Done! RPM should be at: ~/rpmbuild/RPMS/x86_64/paktool-*.*.x86_64.rpm"
+echo "Done! RPM should be at: paktool-*.*.x86_64.rpm"
+cp ~/rpmbuild/RPMS/x86_64/paktool-*.*.x86_64.rpm .

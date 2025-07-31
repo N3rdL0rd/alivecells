@@ -15,3 +15,5 @@ saves/
 output/
 out/
 PAKTool/paktool_*_*
+PAKTool/*.deb
+PAKTool/*.rpm
