@@ -17,3 +17,4 @@ out/
 PAKTool/paktool_*_*
 PAKTool/*.deb
 PAKTool/*.rpm
+PAKTool/*.zip
