@@ -13,6 +13,7 @@ import io
 import os
 import struct
 import toml
+import datetime
 
 # --- Constants and Maps ---
 MAGIC_NUMBER = 0x11CEADDE # DE AD CE 11
@@ -30,17 +31,27 @@ FEATURE_FLAG_MAP = {
     4: "S_Experimental", 5: "S_UsesMods", 6: "S_HaveLore",
 }
 
-def verify_save_checksum(file_path: Path) -> bool:
+DLC_MAP = {
+    0: "Rise of the Giant",
+    1: "The Bad Seed",
+    2: "Fatal Falls",
+    3: "The Queen and the Sea",
+    4: "Return to Castlevania",
+}
+
+def verify_save_checksum(file_path: Path, verbose=True) -> bool:
     """
     Performs the core logic of verifying the SHA-1 checksum.
 
     Args:
         file_path: A Path object pointing to the save file.
+        verbose: If True, prints detailed steps.
 
     Returns:
         True if the checksum is valid, False otherwise.
     """
-    print(f"[*] Verifying checksum for: {file_path.name}")
+    if verbose:
+        print(f"[*] Verifying checksum for: {file_path.name}")
     
     try:
         with open(file_path, 'rb') as f:
@@ -54,16 +65,16 @@ def verify_save_checksum(file_path: Path) -> bool:
         return False
 
     stored_checksum = save_data[CHECKSUM_OFFSET : CHECKSUM_OFFSET + CHECKSUM_SIZE]
-    print(f"  > Stored Checksum:   {stored_checksum.hex()}")
+    if verbose:
+        print(f"  > Stored Checksum:   {stored_checksum.hex()}")
 
     data_for_hashing = bytearray(save_data)
-
     checksum_placeholder = b'\x00' * CHECKSUM_SIZE
-
     data_for_hashing[CHECKSUM_OFFSET : CHECKSUM_OFFSET + CHECKSUM_SIZE] = checksum_placeholder
     
     calculated_checksum = hashlib.sha1(data_for_hashing).digest()
-    print(f"  > Calculated Checksum: {calculated_checksum.hex()}")
+    if verbose:
+        print(f"  > Calculated Checksum: {calculated_checksum.hex()}")
     
     return stored_checksum == calculated_checksum
 
@@ -75,7 +86,7 @@ def handle_verify(args: argparse.Namespace):
         print(f"[!] Error: File not found at '{save_file_path}'", file=sys.stderr)
         sys.exit(1)
 
-    is_valid = verify_save_checksum(save_file_path)
+    is_valid = verify_save_checksum(save_file_path, verbose=True)
     
     if is_valid:
         print("\n[+] SUCCESS: Checksum is VALID!")
@@ -83,6 +94,89 @@ def handle_verify(args: argparse.Namespace):
     else:
         print("\n[!] FAILURE: Checksum is INVALID! The file may be corrupt or modified.")
         sys.exit(1)
+
+def handle_info(args: argparse.Namespace):
+    """Handler for the 'info' subcommand to print details about a save file."""
+    save_file_path = Path(args.save_file)
+
+    if not save_file_path.is_file():
+        print(f"[!] Error: File not found at '{save_file_path}'", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"--- Save File: {save_file_path.name} ---")
+
+    # 1. Verify checksum first
+    is_valid = verify_save_checksum(save_file_path, verbose=False)
+    status = "VALID" if is_valid else "INVALID (file may be corrupt!)"
+    
+    with open(save_file_path, 'rb') as f:
+        save_data = f.read()
+
+    # 2. Unpack and print header info
+    magic, version, stored_checksum, git_hash, build_date_bytes, flags_int = struct.unpack(HEADER_FORMAT, save_data[:HEADER_SIZE])
+    
+    print("\n[ Header Information ]")
+    print(f"  - Checksum Status:   {status}")
+    print(f"  - Magic Number:      {magic:#010x}")
+    print(f"  - Format Version:    {version}")
+    print(f"  - Git Commit Hash:   {git_hash.hex()}")
+    print(f"  - Build Date:        {build_date_bytes.decode('utf-8').strip()}")
+    
+    # 3. Analyze and print flags
+    print("\n[ Flags Analysis ]")
+    print(f"  - Raw Flags Value:   {flags_int:#010x}")
+    all_flags_map = SAVE_CONTENT_MAP | FEATURE_FLAG_MAP
+    for bit in range(32):
+        if (flags_int >> bit) & 1:
+            flag_name = all_flags_map.get(bit, f"Unknown_Bit_{bit}")
+            flag_type = "[Data Chunk]" if bit in SAVE_CONTENT_MAP else "[Feature Flag]"
+            print(f"    - Bit {bit:<2} {flag_type:<13} {flag_name}")
+
+    # 4. Analyze payload
+    print("\n[ Payload Information ]")
+    compressed_payload = save_data[HEADER_SIZE:]
+    print(f"  - Compressed Size:     {len(compressed_payload)} bytes")
+    try:
+        decompressed_payload = zlib.decompress(compressed_payload)
+        print(f"  - Decompressed Size:   {len(decompressed_payload)} bytes")
+        
+        print("  - Data Chunks Present:")
+        payload_reader = io.BytesIO(decompressed_payload)
+        for bit in range(32):
+            if (flags_int >> bit) & 1 and bit in SAVE_CONTENT_MAP:
+                chunk_name = SAVE_CONTENT_MAP[bit]
+                try:
+                    chunk_len = struct.unpack('<I', payload_reader.read(4))[0]
+                    chunk_data = payload_reader.read(chunk_len)
+                    
+                    print(f"    - {chunk_name:<18} {chunk_len:>6} bytes", end="")
+                    
+                    # --- Primitive Chunk Decoding Logic ---
+                    if bit == 3 and chunk_len == 8: # S_Date (double)
+                        timestamp = struct.unpack('<d', chunk_data)[0]
+                        date_str = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                        print(f" -> {date_str}")
+                    elif bit == 7 and chunk_len == 4: # S_VersionNumber (float)
+                        version_float = struct.unpack('<f', chunk_data)[0]
+                        print(f" -> Version: {version_float:.1f}")
+                    elif bit == 8 and chunk_len == 4: # S_DLCMask (int)
+                        dlc_mask = struct.unpack('<I', chunk_data)[0]
+                        print(f" -> Mask: {dlc_mask} ({dlc_mask:#010x})")
+                        for dlc_bit, dlc_name in DLC_MAP.items():
+                            is_owned = (dlc_mask & (1 << dlc_bit)) != 0
+                            status_str = "Owned" if is_owned else "Not Owned"
+                            print(f"        - {dlc_name:<25}: {status_str}")
+                    else: # hxbit or other complex data
+                        print(" (hxbit data)")
+
+                except (struct.error, IndexError):
+                    print(f"\n    - {chunk_name:<18} ERROR: Could not read full chunk.")
+                    break
+
+    except zlib.error as e:
+        print(f"  - Decompression failed: {e}")
+
+    sys.exit(0)
 
 def handle_extract(args: argparse.Namespace):
     """
@@ -135,7 +229,7 @@ def handle_extract(args: argparse.Namespace):
         'header': {
             'version': version,
             'git_hash_hex': git_hash.hex(),
-            'build_date': build_date_bytes.decode('utf-8'),
+            'build_date': build_date_bytes.decode('utf-8').strip(),
         },
         'flags': flag_details
     }
@@ -216,7 +310,6 @@ def handle_repack(args: argparse.Namespace):
     
     print(f"\n[+] Repacking complete. New save file created at: {output_file_path}")
 
-
 def main():
     """Sets up argument parsing and delegates to subcommand handlers."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -226,6 +319,10 @@ def main():
     verify_parser.add_argument('save_file', help='Path to the save file to verify.')
     verify_parser.set_defaults(func=handle_verify)
     
+    info_parser = subparsers.add_parser('info', help='Display detailed information and decode primitive chunks from a save file.')
+    info_parser.add_argument('save_file', help='Path to the save file to inspect.')
+    info_parser.set_defaults(func=handle_info)
+
     extract_parser = subparsers.add_parser('extract', help='Extract chunks and editable metadata from a save file.')
     extract_parser.add_argument('save_file', help='Path to the save file to extract from.')
     extract_parser.add_argument('output_dir', help='Path to the directory to save files.')
