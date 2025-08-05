@@ -2,3 +2,4 @@ tqdm
 pywin32
 vdf
 toml
+crashlink
