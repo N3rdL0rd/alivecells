@@ -2,6 +2,8 @@
 
 A toolkit for modding Dead Cells
 
+Join the [Hashlink Modding Community Discord](https://discord.gg/Es8ZpVkPey) for support and more info on mods!
+
 ## Installation
 
 > [!NOTE]
