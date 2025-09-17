@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="paktool"
-APP_VERSION="0.0.2"
+APP_VERSION="0.0.3"
 
 echo "Publishing for Windows (win-x64)..."
 dotnet publish -c Release --runtime win-x64 --self-contained false

@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="paktool"
-APP_VERSION="0.0.2"
+APP_VERSION="0.0.3"
 NET_VERSION="net9.0"
 
 echo "Publishing for OSX Apple Silicon (osx-arm64)..."
