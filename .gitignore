@@ -19,3 +19,4 @@ PAKTool/*.deb
 PAKTool/*.rpm
 PAKTool/*.zip
 stubs/
+*.pak

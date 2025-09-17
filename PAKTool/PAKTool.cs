@@ -329,7 +329,13 @@ namespace PAKTool
         {
             string _name = new string(_reader.ReadChars((int)_reader.ReadByte()));
             EntryData entryData;
-            if (((int)_reader.ReadByte() & 1) != 0)
+
+            byte flags = _reader.ReadByte();
+            // flags & 1 = isDirectory
+            // flags & 2 = isLargeOffset
+            bool isDirectory = (flags & 1) != 0;
+
+            if (isDirectory)
             {
                 DirectoryData _parent1 = new DirectoryData(_parent, _name);
                 int num = _reader.ReadInt32();
@@ -342,7 +348,26 @@ namespace PAKTool
                 entryData = (EntryData)_parent1;
             }
             else
-                entryData = (EntryData)new FileData(_parent, _name, this.headerSize + _reader.ReadInt32(), _reader.ReadInt32(), _reader.ReadInt32());
+            {
+                long relativePosition;
+                bool isLargeOffset = (flags & 2) != 0;
+
+                if (isLargeOffset)
+                {
+                    relativePosition = (long)_reader.ReadDouble();
+                }
+                else
+                {
+                    relativePosition = _reader.ReadInt32();
+                }
+
+                int fileSize = _reader.ReadInt32();
+                int checksum = _reader.ReadInt32();
+
+                long absolutePosition = this.headerSize + relativePosition;
+
+                entryData = (EntryData)new FileData(_parent, _name, absolutePosition, fileSize, checksum);
+            }
             return entryData;
         }
 
@@ -350,12 +375,13 @@ namespace PAKTool
         {
             byte length = (byte)_entry.name.Length;
             _writer.Write(length);
-            if (length > (byte)0)
+            if (length > 0)
                 _writer.Write(_entry.name.ToCharArray());
+
             if (_entry.isDirectory)
             {
                 DirectoryData directoryData = (DirectoryData)_entry;
-                _writer.Write((byte)1);
+                _writer.Write((byte)1); // &1 = isDirectory
                 _writer.Write(directoryData.directories.Count + directoryData.files.Count);
                 foreach (DirectoryData directory in directoryData.directories)
                     this.WritePAKEntry(_writer, (EntryData)directory);
@@ -365,13 +391,30 @@ namespace PAKTool
             else
             {
                 FileData fileData = (FileData)_entry;
-                _writer.Write((byte)0);
-                _writer.Write(fileData.position);
+                byte flags = 0;
+                long relativePosition = fileData.position - this.headerSize;
+
+                bool useLargeOffset = relativePosition > Int32.MaxValue;
+                if (useLargeOffset)
+                {
+                    flags |= 2;
+                }
+
+                _writer.Write(flags);
+
+                if (useLargeOffset)
+                {
+                    _writer.Write((double)relativePosition);
+                }
+                else
+                {
+                    _writer.Write((int)relativePosition);
+                }
+
                 _writer.Write(fileData.size);
                 _writer.Write(fileData.checksum);
             }
         }
-
         private void WritePAKContent(BinaryWriter _writer, DirectoryInfo _dir)
         {
             foreach (DirectoryInfo directory in _dir.GetDirectories())

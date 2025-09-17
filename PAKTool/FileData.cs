@@ -9,7 +9,7 @@ namespace PAKTool
 {
   internal class FileData : EntryData
   {
-    public int position { get; private set; }
+    public long position { get; private set; }
 
     public int size { get; private set; }
 
@@ -17,7 +17,7 @@ namespace PAKTool
 
     public override bool isDirectory => false;
 
-    public FileData(DirectoryData _parent, string _name, int _position, int _size, int _crc)
+    public FileData(DirectoryData _parent, string _name, long _position, int _size, int _crc)
       : base(_parent, _name)
     {
       this.position = _position;
