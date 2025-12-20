@@ -9,6 +9,8 @@ import argparse
 import sys
 import zlib
 from pathlib import Path
+import tempfile
+import shutil
 import io
 import os
 import struct
@@ -310,6 +312,38 @@ def handle_repack(args: argparse.Namespace):
     
     print(f"\n[+] Repacking complete. New save file created at: {output_file_path}")
 
+def handle_convert(args: argparse.Namespace):
+    """
+    Converts a save file from one format into another.
+    Current supported formats are 'mobile' and 'PC'.
+    In this version, only the S_User chunk (permanent unlocks) is copied; converting the current run is not supported at the moment.
+    """
+    # Thanks to Dantepicachu for providing the mobile save model
+
+    with tempfile.TemporaryDirectory() as tmpdir_model:
+        with tempfile.TemporaryDirectory() as tmpdir_save:
+
+            extract_args = argparse.Namespace()
+            extract_args.save_file = args.input_file
+            extract_args.output_dir = tmpdir_save
+
+            repack_args = argparse.Namespace()
+            repack_args.input_dir = tmpdir_model
+            repack_args.output_file = args.output_file
+
+            if not Path(args.input_file).is_file():
+                print(f"[!] Error: File not found at '{args.input_file}'", file=sys.stderr)
+                sys.exit(1)
+
+            print(f"[*] Extracting input save file: '{args.input_file}'")
+            handle_extract(extract_args)
+
+            shutil.copytree(f'save_models/{args.output_format}', tmpdir_model, dirs_exist_ok=True)
+            shutil.copy(f'{tmpdir_save}/Bit_00_S_User.bin', f'{tmpdir_model}/Bit_00_S_User.bin')
+
+            print(f"\n[*] Packing into output {args.output_format} save file: '{args.output_file}'")
+            handle_repack(repack_args)
+
 def main():
     """Sets up argument parsing and delegates to subcommand handlers."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -332,6 +366,12 @@ def main():
     repack_parser.add_argument('input_dir', help='Path to the directory with chunk files and metadata.toml.')
     repack_parser.add_argument('output_file', help='Path for the newly created save file.')
     repack_parser.set_defaults(func=handle_repack)
+    
+    convert_parser = subparsers.add_parser('convert', help='Convert a save file from one format to another.')
+    convert_parser.add_argument('input_file', help='Path to the save file to convert.')
+    convert_parser.add_argument('output_file', help='Path for the converted save file.')
+    convert_parser.add_argument('output_format', help='Format of the converted save file.', choices=['mobile', 'PC'])
+    convert_parser.set_defaults(func=handle_convert)
 
     args = parser.parse_args()
     args.func(args)

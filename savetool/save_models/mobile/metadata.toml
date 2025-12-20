@@ -1,0 +1,38 @@
+[header]
+version = 2
+git_hash_hex = "0000deadce110000000000000000000300500000"
+build_date = "2025-02-06"
+
+[flags]
+S_User = 1
+S_Game = 1
+S_UserAndGameData = 1
+S_Date = 1
+S_Experimental = 0
+S_UsesMods = 0
+S_HaveLore = 1
+S_VersionNumber = 1
+S_DLCMask = 1
+Unknown_Bit_9 = 0
+Unknown_Bit_10 = 0
+Unknown_Bit_11 = 0
+Unknown_Bit_12 = 0
+Unknown_Bit_13 = 0
+Unknown_Bit_14 = 0
+Unknown_Bit_15 = 0
+Unknown_Bit_16 = 0
+Unknown_Bit_17 = 0
+Unknown_Bit_18 = 0
+Unknown_Bit_19 = 0
+Unknown_Bit_20 = 0
+Unknown_Bit_21 = 0
+Unknown_Bit_22 = 0
+Unknown_Bit_23 = 0
+Unknown_Bit_24 = 0
+Unknown_Bit_25 = 0
+Unknown_Bit_26 = 0
+Unknown_Bit_27 = 0
+Unknown_Bit_28 = 0
+Unknown_Bit_29 = 0
+Unknown_Bit_30 = 0
+Unknown_Bit_31 = 0
