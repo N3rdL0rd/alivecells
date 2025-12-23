@@ -3,7 +3,7 @@
 %global debug_package %{nil}
 
 Name:           %{app_name}
-Version:        0.0.2
+Version:        0.0.3
 Release:        1%{?dist}
 Summary:        A tool for expanding and creating Dead Cells PAK archives.
 
@@ -19,7 +19,7 @@ BuildArch:      x86_64
 %description
 A command-line tool for expanding and creating PAK resource archives for the
 game Dead Cells. This version has been recompiled from decompiled sources to
-run natively on modern .NET and Linux. Now with v1 PAK support <v35!
+run natively on modern .NET and Linux. Now with v1 PAK support >=v35!
 
 # =============================================================================
 %prep
