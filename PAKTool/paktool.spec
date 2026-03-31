@@ -3,7 +3,7 @@
 %global debug_package %{nil}
 
 Name:           %{app_name}
-Version:        0.0.3
+Version:        0.0.4
 Release:        1%{?dist}
 Summary:        A tool for expanding and creating Dead Cells PAK archives.
 

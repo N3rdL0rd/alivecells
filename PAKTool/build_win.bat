@@ -2,7 +2,7 @@
 setlocal
 
 set "APP_NAME=paktool"
-set "APP_VERSION=0.0.3"
+set "APP_VERSION=0.0.4"
 set "SCRIPT_DIR=%~dp0"
 set "PUBLISH_DIR=%SCRIPT_DIR%bin\Release\net9.0\win-x64\publish"
 set "ARCHIVE_PATH=%SCRIPT_DIR%%APP_NAME%-%APP_VERSION%-win-x64.zip"

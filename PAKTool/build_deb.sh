@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="paktool"
-APP_VERSION="0.0.3"
+APP_VERSION="0.0.4"
 
 echo "Publishing .NET application..."
 dotnet publish -c Release --runtime linux-x64 --self-contained false
