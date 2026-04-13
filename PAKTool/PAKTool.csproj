@@ -11,12 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="CDBTool">
-      <HintPath>lib\CDBTool.exe</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
