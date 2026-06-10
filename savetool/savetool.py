@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Tool for working with Dead Cells save files. Allows verification, extraction, and repacking.
+Tool for working with Dead Cells save files. Allows verification, extraction, repacking, and basic conversion.
 """
 
 import hashlib
@@ -315,33 +315,62 @@ def handle_repack(args: argparse.Namespace):
 def handle_convert(args: argparse.Namespace):
     """
     Converts a save file from one format into another.
-    Current supported formats are 'mobile' and 'PC'.
     In this version, only the S_User chunk (permanent unlocks) is copied; converting the current run is not supported at the moment.
+    The S_Game and S_UserAndGameData chunks are deleted to force a new run.
     """
-    # Thanks to Dantepicachu for providing the mobile save model
-
-    with tempfile.TemporaryDirectory() as tmpdir_model:
-        with tempfile.TemporaryDirectory() as tmpdir_save:
-
-            extract_args = argparse.Namespace()
-            extract_args.save_file = args.input_file
-            extract_args.output_dir = tmpdir_save
+    
+    if not Path(args.input_file).is_file():
+        print(f"[!] Error: File not found at '{args.input_file}'", file=sys.stderr)
+        sys.exit(1)
+    if not Path(args.shell_file).is_file():
+        print(f"[!] Error: File not found at '{args.shell_file}'", file=sys.stderr)
+        sys.exit(1)
+    
+    with tempfile.TemporaryDirectory() as tmpdir_shell:
+        tmpdir_shell_path = Path(tmpdir_shell)
+        with tempfile.TemporaryDirectory() as tmpdir_input:
+            # 1. Create args objects
+            extract_input_args = argparse.Namespace()
+            extract_input_args.save_file = args.input_file
+            extract_input_args.output_dir = tmpdir_input
+            
+            extract_shell_args = argparse.Namespace()
+            extract_shell_args.save_file = args.shell_file
+            extract_shell_args.output_dir = tmpdir_shell
 
             repack_args = argparse.Namespace()
-            repack_args.input_dir = tmpdir_model
+            repack_args.input_dir = tmpdir_shell
             repack_args.output_file = args.output_file
 
-            if not Path(args.input_file).is_file():
-                print(f"[!] Error: File not found at '{args.input_file}'", file=sys.stderr)
-                sys.exit(1)
-
+            # 2. Extract save files
             print(f"[*] Extracting input save file: '{args.input_file}'")
-            handle_extract(extract_args)
+            handle_extract(extract_input_args)
+            
+            print(f"\n[*] Extracting shell save file: '{args.shell_file}'")
+            handle_extract(extract_shell_args)
 
-            shutil.copytree(f'save_models/{args.output_format}', tmpdir_model, dirs_exist_ok=True)
-            shutil.copy(f'{tmpdir_save}/Bit_00_S_User.bin', f'{tmpdir_model}/Bit_00_S_User.bin')
+            # 3. Copy the source S_User chunk
+            shutil.copy(f'{tmpdir_input}/Bit_00_S_User.bin', f'{tmpdir_shell}/Bit_00_S_User.bin')
+            
+            # 4. Delete the destination S_Game and S_UserAndGameData chunks to force a new run
+            metadata_path = tmpdir_shell_path / "metadata.toml"
+            if not metadata_path.is_file():
+                print(f"[!] Error: 'metadata.toml' not found in '{tmpdir_shell_path}'.", file=sys.stderr)
+                sys.exit(1)
+            
+            metadata = toml.load(metadata_path)
+            metadata['flags']['S_Game'] = 0
+            metadata['flags']['S_UserAndGameData'] = 0
+            with open(metadata_path, 'w') as f:
+                toml.dump(metadata, f)
+            
+            if (tmpdir_shell_path / 'Bit_01_S_Game.bin').is_file():
+                os.remove(tmpdir_shell_path / 'Bit_01_S_Game.bin')
+            if (tmpdir_shell_path / 'Bit_02_S_UserAndGameData.bin').is_file():
+                os.remove(tmpdir_shell_path / 'Bit_02_S_UserAndGameData.bin')
 
-            print(f"\n[*] Packing into output {args.output_format} save file: '{args.output_file}'")
+            # 5. Repack
+            print(f"\n[*] Packing into output save file: '{args.output_file}'")
             handle_repack(repack_args)
 
 def main():
@@ -369,8 +398,8 @@ def main():
     
     convert_parser = subparsers.add_parser('convert', help='Convert a save file from one format to another.')
     convert_parser.add_argument('input_file', help='Path to the save file to convert.')
+    convert_parser.add_argument('shell_file', help='Path to a save file from the destination platform.')
     convert_parser.add_argument('output_file', help='Path for the converted save file.')
-    convert_parser.add_argument('output_format', help='Format of the converted save file.', choices=['mobile', 'PC'])
     convert_parser.set_defaults(func=handle_convert)
 
     args = parser.parse_args()
