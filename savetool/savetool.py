@@ -41,6 +41,49 @@ DLC_MAP = {
     4: "Return to Castlevania",
 }
 
+HXBIT_CHUNK_BITS = {0, 1, 2}
+
+
+def parse_save_bytes(save_data: bytes):
+    if len(save_data) < HEADER_SIZE:
+        raise ValueError("File is too small to be a valid save file.")
+    magic, version, stored_checksum, git_hash, build_date_bytes, flags_int = struct.unpack(
+        HEADER_FORMAT, save_data[:HEADER_SIZE]
+    )
+    if magic != MAGIC_NUMBER:
+        raise ValueError(f"Bad magic number {magic:#010x} (expected {MAGIC_NUMBER:#010x}).")
+    payload = zlib.decompress(save_data[HEADER_SIZE:])
+    reader = io.BytesIO(payload)
+    chunks = {}
+    for bit in range(32):
+        if (flags_int >> bit) & 1 and bit in SAVE_CONTENT_MAP:
+            chunk_len = struct.unpack('<I', reader.read(4))[0]
+            chunks[bit] = reader.read(chunk_len)
+    header = {
+        'version': version,
+        'git_hash': git_hash,
+        'build_date': build_date_bytes.decode('utf-8').strip(),
+        'flags': flags_int,
+        'stored_checksum': stored_checksum,
+    }
+    return header, chunks
+
+
+def build_save_bytes(version: int, git_hash: bytes, build_date: str, flags_int: int,
+                     chunks: dict) -> bytes:
+    payload = io.BytesIO()
+    for bit in sorted(chunks):
+        payload.write(struct.pack('<I', len(chunks[bit])))
+        payload.write(chunks[bit])
+    compressed = zlib.compress(payload.getvalue(), level=9)
+    header = struct.pack(
+        HEADER_FORMAT, MAGIC_NUMBER, version, b'\x00' * CHECKSUM_SIZE,
+        git_hash, build_date.encode('utf-8'), flags_int,
+    )
+    final = bytearray(header + compressed)
+    final[CHECKSUM_OFFSET:CHECKSUM_OFFSET + CHECKSUM_SIZE] = hashlib.sha1(final).digest()
+    return bytes(final)
+
 def verify_save_checksum(file_path: Path, verbose=True) -> bool:
     """
     Performs the core logic of verifying the SHA-1 checksum.
@@ -373,6 +416,230 @@ def handle_convert(args: argparse.Namespace):
             print(f"\n[*] Packing into output save file: '{args.output_file}'")
             handle_repack(repack_args)
 
+def handle_edit(args: argparse.Namespace):
+    import datetime as _dt
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+
+    from hxbit.core import HXSFile
+    from hxbit.gui import DPIAwareTk, HXSTreeFrame, apply_platform_scaling
+
+    save_file_path = Path(args.save_file)
+    if not save_file_path.is_file():
+        print(f"[!] Error: File not found at '{save_file_path}'", file=sys.stderr)
+        sys.exit(1)
+
+    class SaveEditorApp(DPIAwareTk):
+        def __init__(self, path: Path):
+            super().__init__()
+            scaling = apply_platform_scaling(self)
+            self.title(f"savetools - {path.name}")
+            self.geometry(f"{round(1280 * scaling)}x{round(860 * scaling)}")
+
+            self.path = path
+            self.status_var = tk.StringVar(value="Ready")
+
+            raw = path.read_bytes()
+            self.checksum_ok = verify_save_checksum(path, verbose=False)
+            self.header, self.chunks = parse_save_bytes(raw)
+            self.hxs_files = {}
+
+            self._build_ui()
+
+        def _build_ui(self) -> None:
+            self.columnconfigure(0, weight=1)
+            self.rowconfigure(1, weight=1)
+
+            toolbar = ttk.Frame(self, padding=8)
+            toolbar.grid(row=0, column=0, sticky="ew")
+            toolbar.columnconfigure(2, weight=1)
+            ttk.Button(toolbar, text="Save", command=self.save).grid(row=0, column=0, padx=(0, 6))
+            ttk.Button(toolbar, text="Save As", command=self.save_as).grid(row=0, column=1, padx=6)
+            checksum_note = "" if self.checksum_ok else "   [checksum INVALID on load]"
+            ttk.Label(toolbar, text=f"{self.path}{checksum_note}").grid(row=0, column=2, sticky="e")
+
+            notebook = ttk.Notebook(self)
+            notebook.grid(row=1, column=0, sticky="nsew")
+
+            self._build_header_tab(notebook)
+            for bit in sorted(self.chunks):
+                name = SAVE_CONTENT_MAP[bit]
+                if bit in HXBIT_CHUNK_BITS:
+                    self._build_hxbit_tab(notebook, bit, name)
+                elif bit == 3:
+                    self._build_date_tab(notebook, bit, name)
+                elif bit == 7:
+                    self._build_version_tab(notebook, bit, name)
+                elif bit == 8:
+                    self._build_dlc_tab(notebook, bit, name)
+                else:
+                    self._build_hex_tab(notebook, bit, name)
+
+            status = ttk.Label(self, textvariable=self.status_var, anchor="w", padding=8)
+            status.grid(row=2, column=0, sticky="ew")
+
+        def _build_header_tab(self, notebook: ttk.Notebook) -> None:
+            tab = ttk.Frame(notebook, padding=12)
+            notebook.add(tab, text="Header")
+            tab.columnconfigure(1, weight=1)
+
+            ttk.Label(tab, text="Format version").grid(row=0, column=0, sticky="w", pady=4)
+            self.version_var = tk.StringVar(value=str(self.header['version']))
+            ttk.Entry(tab, textvariable=self.version_var, width=12).grid(row=0, column=1, sticky="w", pady=4)
+
+            ttk.Label(tab, text="Git commit hash").grid(row=1, column=0, sticky="w", pady=4)
+            self.git_hash_var = tk.StringVar(value=self.header['git_hash'].hex())
+            ttk.Entry(tab, textvariable=self.git_hash_var, width=48).grid(row=1, column=1, sticky="w", pady=4)
+
+            ttk.Label(tab, text="Build date").grid(row=2, column=0, sticky="w", pady=4)
+            self.build_date_var = tk.StringVar(value=self.header['build_date'])
+            ttk.Entry(tab, textvariable=self.build_date_var, width=16).grid(row=2, column=1, sticky="w", pady=4)
+
+            ttk.Label(tab, text="Feature flags").grid(row=3, column=0, sticky="nw", pady=(16, 4))
+            flags_frame = ttk.Frame(tab)
+            flags_frame.grid(row=3, column=1, sticky="w", pady=(16, 4))
+            self.feature_flag_vars = {}
+            for row, (bit, name) in enumerate(sorted(FEATURE_FLAG_MAP.items())):
+                var = tk.BooleanVar(value=bool((self.header['flags'] >> bit) & 1))
+                self.feature_flag_vars[bit] = var
+                ttk.Checkbutton(flags_frame, text=f"{name} (bit {bit})", variable=var).grid(
+                    row=row, column=0, sticky="w"
+                )
+
+        def _build_hxbit_tab(self, notebook: ttk.Notebook, bit: int, name: str) -> None:
+            tab = ttk.Frame(notebook, padding=8)
+            notebook.add(tab, text=name)
+            tab.columnconfigure(0, weight=1)
+            tab.rowconfigure(0, weight=1)
+            try:
+                hxs = HXSFile.from_bytes(self.chunks[bit], shims="deadcells")
+            except Exception as e:
+                ttk.Label(tab, text=f"Failed to parse {name} as hxbit data:\n{e}").grid(
+                    row=0, column=0, sticky="nw"
+                )
+                return
+            self.hxs_files[bit] = hxs
+            tree = HXSTreeFrame(tab, on_status=self.status_var.set)
+            tree.grid(row=0, column=0, sticky="nsew")
+            tree.load(hxs)
+            if hxs.object_parse_error is not None:
+                ttk.Label(
+                    tab,
+                    text=f"Warning: typed parse incomplete ({hxs.object_parse_error}); "
+                         "the chunk will be saved from its preserved raw payload.",
+                ).grid(row=1, column=0, sticky="w", pady=(6, 0))
+
+        def _build_date_tab(self, notebook: ttk.Notebook, bit: int, name: str) -> None:
+            tab = ttk.Frame(notebook, padding=12)
+            notebook.add(tab, text=name)
+            timestamp = struct.unpack('<d', self.chunks[bit])[0]
+            date_str = _dt.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            ttk.Label(tab, text="Save date (YYYY-MM-DD HH:MM:SS, local time)").grid(row=0, column=0, sticky="w", pady=4)
+            self.date_var = tk.StringVar(value=date_str)
+            ttk.Entry(tab, textvariable=self.date_var, width=24).grid(row=1, column=0, sticky="w", pady=4)
+
+        def _build_version_tab(self, notebook: ttk.Notebook, bit: int, name: str) -> None:
+            tab = ttk.Frame(notebook, padding=12)
+            notebook.add(tab, text=name)
+            version_float = struct.unpack('<f', self.chunks[bit])[0]
+            ttk.Label(tab, text="Game version number").grid(row=0, column=0, sticky="w", pady=4)
+            self.game_version_var = tk.StringVar(value=f"{version_float:g}")
+            ttk.Entry(tab, textvariable=self.game_version_var, width=12).grid(row=1, column=0, sticky="w", pady=4)
+
+        def _build_dlc_tab(self, notebook: ttk.Notebook, bit: int, name: str) -> None:
+            tab = ttk.Frame(notebook, padding=12)
+            notebook.add(tab, text=name)
+            dlc_mask = struct.unpack('<I', self.chunks[bit])[0]
+            self.dlc_unknown_bits = dlc_mask & ~sum(1 << b for b in DLC_MAP)
+            ttk.Label(tab, text="Owned DLC").grid(row=0, column=0, sticky="w", pady=(0, 8))
+            self.dlc_vars = {}
+            for row, (dlc_bit, dlc_name) in enumerate(DLC_MAP.items(), start=1):
+                var = tk.BooleanVar(value=bool((dlc_mask >> dlc_bit) & 1))
+                self.dlc_vars[dlc_bit] = var
+                ttk.Checkbutton(tab, text=dlc_name, variable=var).grid(row=row, column=0, sticky="w")
+
+        def _build_hex_tab(self, notebook: ttk.Notebook, bit: int, name: str) -> None:
+            tab = ttk.Frame(notebook, padding=8)
+            notebook.add(tab, text=name)
+            tab.columnconfigure(0, weight=1)
+            tab.rowconfigure(0, weight=1)
+            text = tk.Text(tab, wrap="none")
+            text.grid(row=0, column=0, sticky="nsew")
+            data = self.chunks[bit]
+            preview = data[:4096]
+            lines = [
+                f"{off:08x}  {preview[off:off + 16].hex(' ')}"
+                for off in range(0, len(preview), 16)
+            ]
+            if len(data) > len(preview):
+                lines.append(f"… {len(data) - len(preview)} more bytes")
+            text.insert("1.0", "\n".join(lines))
+            text.configure(state="disabled")
+
+        def _collect(self) -> bytes:
+            chunks = dict(self.chunks)
+            for bit, hxs in self.hxs_files.items():
+                chunks[bit] = hxs.serialise()
+            if hasattr(self, "date_var"):
+                parsed = _dt.datetime.strptime(self.date_var.get().strip(), '%Y-%m-%d %H:%M:%S')
+                chunks[3] = struct.pack('<d', parsed.timestamp())
+            if hasattr(self, "game_version_var"):
+                chunks[7] = struct.pack('<f', float(self.game_version_var.get()))
+            if hasattr(self, "dlc_vars"):
+                mask = self.dlc_unknown_bits
+                for dlc_bit, var in self.dlc_vars.items():
+                    if var.get():
+                        mask |= 1 << dlc_bit
+                chunks[8] = struct.pack('<I', mask)
+
+            flags = 0
+            for bit in chunks:
+                flags |= 1 << bit
+            for bit, var in self.feature_flag_vars.items():
+                if var.get():
+                    flags |= 1 << bit
+            known = sum(1 << b for b in SAVE_CONTENT_MAP) | sum(1 << b for b in FEATURE_FLAG_MAP)
+            flags |= self.header['flags'] & ~known
+
+            git_hash = bytes.fromhex(self.git_hash_var.get().strip())
+            if len(git_hash) != 20:
+                raise ValueError("Git hash must be exactly 20 bytes (40 hex characters).")
+            return build_save_bytes(
+                int(self.version_var.get()), git_hash,
+                self.build_date_var.get().strip(), flags, chunks,
+            )
+
+        def save(self) -> None:
+            try:
+                data = self._collect()
+            except Exception as e:
+                messagebox.showerror("Save failed", str(e))
+                return
+            backup = self.path.with_suffix(self.path.suffix + ".bak")
+            if not backup.exists():
+                backup.write_bytes(self.path.read_bytes())
+            self.path.write_bytes(data)
+            self.status_var.set(f"Saved {self.path.name} (backup at {backup.name})")
+
+        def save_as(self) -> None:
+            target = filedialog.asksaveasfilename(
+                title="Save Dead Cells save file",
+                defaultextension=".dat",
+                filetypes=[("Dead Cells saves", "*.dat"), ("All files", "*.*")],
+            )
+            if not target:
+                return
+            try:
+                data = self._collect()
+            except Exception as e:
+                messagebox.showerror("Save failed", str(e))
+                return
+            Path(target).write_bytes(data)
+            self.status_var.set(f"Saved {Path(target).name}")
+
+    SaveEditorApp(save_file_path).mainloop()
+
+
 def main():
     """Sets up argument parsing and delegates to subcommand handlers."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -396,6 +663,10 @@ def main():
     repack_parser.add_argument('output_file', help='Path for the newly created save file.')
     repack_parser.set_defaults(func=handle_repack)
     
+    edit_parser = subparsers.add_parser('edit', help='Open a GUI editor for all chunks and metadata of a save file.')
+    edit_parser.add_argument('save_file', help='Path to the save file to edit.')
+    edit_parser.set_defaults(func=handle_edit)
+
     convert_parser = subparsers.add_parser('convert', help='Convert a save file from one format to another.')
     convert_parser.add_argument('input_file', help='Path to the save file to convert.')
     convert_parser.add_argument('shell_file', help='Path to a save file from the destination platform.')

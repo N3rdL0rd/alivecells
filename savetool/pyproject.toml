@@ -1,0 +1,27 @@
+[project]
+name = "savetool"
+version = "0.1.0"
+description = "Tool for working with Dead Cells save files. Allows verification, extraction, repacking, conversion, and editing."
+requires-python = ">=3.10"
+dependencies = [
+    "hxbit",
+    "toml",
+]
+
+[project.scripts]
+savetool = "savetool:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["savetool"]
+
+[tool.uv]
+package = true
+
+# hxbit is not on PyPI yet; resolve it from the local checkout for now.
+# Delete this section once it is published.
+[tool.uv.sources]
+hxbit = { path = "../../hxbit.py", editable = true }

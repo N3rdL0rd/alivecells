@@ -20,3 +20,10 @@ PAKTool/*.rpm
 PAKTool/*.zip
 stubs/
 *.pak
+*.egg-info
+*.venv
+*__pycache__/
+*/*.pyc
+*/*.pyo
+*/*.pyd
+*.dat.bak
