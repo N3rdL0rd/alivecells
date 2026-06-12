@@ -91,7 +91,6 @@ async function openFile(file) {
     treeNodes.clear();
 
     $("#app").hidden = false;
-    $("#drop-hint").classList.add("hidden");
 
     renderTabs();
     activateTab("header");

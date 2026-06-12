@@ -462,14 +462,3 @@ button.form-action {
   font-size: 20px;
   cursor: pointer;
 }
-
-.drop-hint {
-  margin: auto;
-  padding: 32px;
-  color: var(--overlay1);
-  text-align: center;
-}
-
-.drop-hint.hidden {
-  display: none;
-}
