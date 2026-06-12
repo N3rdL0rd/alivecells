@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>savetool :)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>savetool dot html</h1>
+  <div class="toolbar">
+    <label class="file-button">
+      Open save file
+      <input type="file" id="file-input" disabled>
+    </label>
+    <button id="save-btn" disabled>Download edited save</button>
+    <span id="status">Loading Pyodide…</span>
+  </div>
+</header>
+
+<main id="app" hidden>
+  <nav class="tabs" id="tabs"></nav>
+  <section class="tab-content" id="tab-content"></section>
+</main>
+
+<footer id="status-bar">Ready</footer>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
