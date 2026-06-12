@@ -1,10 +1,10 @@
 const PY_FILES = [
   { path: "py/core.py", fs: "/home/pyodide/savetool/core.py" },
   { path: "py/js_api.py", fs: "/home/pyodide/savetool/js_api.py" },
-  { path: "py/hxbit/__init__.py", fs: "/home/pyodide/savetool/hxbit/__init__.py" },
+  { path: "py/hxbit/init.py", fs: "/home/pyodide/savetool/hxbit/__init__.py" },
   { path: "py/hxbit/core.py", fs: "/home/pyodide/savetool/hxbit/core.py" },
   { path: "py/hxbit/debug.py", fs: "/home/pyodide/savetool/hxbit/debug.py" },
-  { path: "py/hxbit/shims/__init__.py", fs: "/home/pyodide/savetool/hxbit/shims/__init__.py" },
+  { path: "py/hxbit/shims/init.py", fs: "/home/pyodide/savetool/hxbit/shims/__init__.py" },
   { path: "py/hxbit/shims/deadcells.py", fs: "/home/pyodide/savetool/hxbit/shims/deadcells.py" },
 ];
 
