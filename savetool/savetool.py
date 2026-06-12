@@ -6,6 +6,7 @@ Tool for working with Dead Cells save files. Allows verification, extraction, re
 
 import hashlib
 import argparse
+import difflib
 import sys
 import zlib
 from pathlib import Path
@@ -416,6 +417,120 @@ def handle_convert(args: argparse.Namespace):
             print(f"\n[*] Packing into output save file: '{args.output_file}'")
             handle_repack(repack_args)
 
+def _hxbit_schema_map(chunk_data: bytes) -> dict[str, list[str]]:
+    """
+    Parses an hxbit chunk and returns a map of class name to a list of
+    lines describing that class's schema (clid plus field name/type pairs),
+    suitable for line-based diffing.
+    """
+    from hxbit.core import HXSFile
+
+    hxs = HXSFile.from_bytes(chunk_data, shims="deadcells")
+    schema_map: dict[str, list[str]] = {}
+    for schema in hxs.schemas:
+        if schema.classdef and schema.classdef.name.value:
+            class_name = schema.classdef.name.value
+        else:
+            class_name = f"<unnamed uid={schema.uid.value}>"
+
+        lines = [f"clid: {schema.clid.value}"]
+        for field_name, field_type in zip(schema.field_names, schema.field_types):
+            field_repr = f"{field_name.value}: {field_type.pprint(indent=1, context=hxs)}"
+            lines.extend(field_repr.splitlines())
+        schema_map[class_name] = lines
+    return schema_map
+
+
+def handle_schemadiff(args: argparse.Namespace):
+    """Handler for the 'schemadiff' subcommand to compare hxbit schemas between two save files."""
+    path_a = Path(args.save_file_a)
+    path_b = Path(args.save_file_b)
+
+    for path in (path_a, path_b):
+        if not path.is_file():
+            print(f"[!] Error: File not found at '{path}'", file=sys.stderr)
+            sys.exit(1)
+
+    with open(path_a, 'rb') as f:
+        _, chunks_a = parse_save_bytes(f.read())
+    with open(path_b, 'rb') as f:
+        _, chunks_b = parse_save_bytes(f.read())
+
+    print(f"[*] Comparing hxbit schemas: {path_a.name} (A) vs {path_b.name} (B)")
+
+    any_diff = False
+    for bit in sorted(HXBIT_CHUNK_BITS):
+        chunk_name = SAVE_CONTENT_MAP[bit]
+        print(f"\n=== {chunk_name} ===")
+
+        has_a = bit in chunks_a
+        has_b = bit in chunks_b
+
+        if not has_a and not has_b:
+            print(f"  Not present in {path_a.name} (A) or {path_b.name} (B).")
+            continue
+        if not has_a:
+            print(f"  Only present in {path_b.name} (B); missing from {path_a.name} (A).")
+            any_diff = True
+            continue
+        if not has_b:
+            print(f"  Only present in {path_a.name} (A); missing from {path_b.name} (B).")
+            any_diff = True
+            continue
+
+        try:
+            schemas_a = _hxbit_schema_map(chunks_a[bit])
+        except Exception as e:
+            print(f"  [!] Failed to parse hxbit schemas from {path_a.name} (A): {e}")
+            continue
+        try:
+            schemas_b = _hxbit_schema_map(chunks_b[bit])
+        except Exception as e:
+            print(f"  [!] Failed to parse hxbit schemas from {path_b.name} (B): {e}")
+            continue
+
+        names_a = set(schemas_a)
+        names_b = set(schemas_b)
+        only_a = sorted(names_a - names_b)
+        only_b = sorted(names_b - names_a)
+        common = sorted(names_a & names_b)
+
+        if only_a:
+            any_diff = True
+            print(f"  Classes only in {path_a.name} (A):")
+            for name in only_a:
+                print(f"    - {name}")
+        if only_b:
+            any_diff = True
+            print(f"  Classes only in {path_b.name} (B):")
+            for name in only_b:
+                print(f"    - {name}")
+
+        changed_any = False
+        for name in common:
+            lines_a = schemas_a[name]
+            lines_b = schemas_b[name]
+            if lines_a == lines_b:
+                continue
+            changed_any = True
+            any_diff = True
+            print(f"\n  Class '{name}' differs:")
+            diff = difflib.unified_diff(
+                lines_a, lines_b,
+                fromfile=f"{path_a.name} (A): {name}",
+                tofile=f"{path_b.name} (B): {name}",
+                lineterm="",
+            )
+            for line in diff:
+                print(f"    {line}")
+
+        if not only_a and not only_b and not changed_any:
+            print(f"  No schema differences between {path_a.name} (A) and {path_b.name} (B).")
+
+    if not any_diff:
+        print(f"\n[+] No schema differences found between {path_a.name} (A) and {path_b.name} (B).")
+
+
 def handle_edit(args: argparse.Namespace):
     import datetime as _dt
     import tkinter as tk
@@ -663,6 +778,11 @@ def main():
     repack_parser.add_argument('output_file', help='Path for the newly created save file.')
     repack_parser.set_defaults(func=handle_repack)
     
+    schemadiff_parser = subparsers.add_parser('schemadiff', help='Compare hxbit schemas between the S_User, S_Game, and S_UserAndGameData chunks of two save files.')
+    schemadiff_parser.add_argument('save_file_a', help='Path to the first save file.')
+    schemadiff_parser.add_argument('save_file_b', help='Path to the second save file.')
+    schemadiff_parser.set_defaults(func=handle_schemadiff)
+
     edit_parser = subparsers.add_parser('edit', help='Open a GUI editor for all chunks and metadata of a save file.')
     edit_parser.add_argument('save_file', help='Path to the save file to edit.')
     edit_parser.set_defaults(func=handle_edit)
