@@ -28,10 +28,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function setStatus(text, cls = "") {
-  const el = $("#status");
   const bar = $("#status-bar");
-  el.textContent = text;
-  el.className = cls ? cls : "";
 
   const debug = [];
   if (state.fileName) debug.push(state.fileName);
