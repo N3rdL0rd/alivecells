@@ -603,7 +603,11 @@ async function downloadSave() {
   if (!state.loaded) return;
   try {
     setStatus("packing save…");
-    const bytes = state.api.serialise();
+    const result = state.api.serialise();
+    // Pyodide hands Python `bytes` back as a PyProxy, not a Uint8Array —
+    // convert it explicitly or Blob would store its repr ("b'\\xde\\xad...'").
+    const bytes = result instanceof Uint8Array ? result : result.toJs();
+    if (typeof result.destroy === "function") result.destroy();
     const blob = new Blob([bytes], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
